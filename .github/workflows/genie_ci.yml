@@ -23,8 +23,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
 
-      - name: Run unit test suite (pytest)
-        run: pytest
+      - name: Run unit test suite (pytest) and linter (ruff)
+        run: |
+          pytest -v
+          ruff check genieops tests
 
       - name: Lint & Offline Benchmark for every registered Genie Space
         run: |
