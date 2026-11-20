@@ -285,6 +285,28 @@ class DatabricksClient:
         except Exception as exc:
             return False, str(exc)
 
+    def execute_uc_export_sql(
+        self,
+        sql: str,
+        catalog: str,
+        schema: str,
+        warehouse_id: str | None = None,
+    ) -> QueryResult:
+        """
+        Executa DDL/MERGE estritamente restrito às tabelas `genie_opt_*` de histórico
+        no `<catalog>.<schema>` aprovado pelo usuário. Nunca substitui `execute_readonly_sql`.
+        """
+        from genieops.uc_export import assert_uc_export_sql_safe
+
+        assert_uc_export_sql_safe(sql, catalog=catalog, schema=schema)
+        wh = warehouse_id or self.warehouse_id
+        args = ["experimental", "aitools", "tools", "query"]
+        if wh:
+            args.extend(["--warehouse", wh])
+        args.append(sql)
+        raw = self.run_cli(*args)
+        return parse_query_result(raw)
+
 
 def parse_query_result(raw: Any) -> QueryResult:
     """Normaliza diferentes formatos JSON de retorno da Databricks CLI para QueryResult."""

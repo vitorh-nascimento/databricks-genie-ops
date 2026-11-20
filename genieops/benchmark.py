@@ -8,6 +8,7 @@ import uuid
 from collections.abc import Callable
 from typing import Any, Literal
 
+from genieops.agent_mode import AgentModeClient, AgentStreamEvent, ExecutionMode
 from genieops.comparator import compare_result_sets
 from genieops.compiler import compile_space, payload_hash
 from genieops.databricks_client import DatabricksClient, QueryResult
@@ -19,9 +20,10 @@ from genieops.history import (
     percentile,
     utc_now_iso,
 )
+from genieops.judges import CallableJudgeAdapter, HeuristicRubricJudge, JudgeProvider
 from genieops.models import BenchmarkCase, SpaceBundle
 
-BenchmarkMode = Literal["offline", "live", "eval-run"]
+BenchmarkMode = Literal["offline", "live", "eval-run", "agent"]
 LLMJudgeFn = Callable[[BenchmarkCase, str, str | None], tuple[bool, str]]
 
 
@@ -161,13 +163,39 @@ def run_benchmark(
     rel_tol: float = 1e-4,
     abs_tol: float = 1e-2,
     llm_judge: LLMJudgeFn | None = None,
+    judge_provider: JudgeProvider | None = None,
+    agent_client: AgentModeClient | None = None,
+    execution_mode: ExecutionMode = "STANDARD",
+    on_agent_event: Callable[[AgentStreamEvent], None] | None = None,
 ) -> tuple[BenchmarkRunRecord, RegressionDiff | None]:
-    """Executa a suíte de benchmark no modo especificado (`offline`, `live`, `eval-run`)."""
+    """Executa a suíte de benchmark no modo especificado (`offline`, `live`, `eval-run`, `agent`)."""
     cases = _select_cases(bundle, ids=ids, only_failed=only_failed, history=history)
     known_sources = _known_source_names(bundle)
 
     if mode == "offline":
         items = _run_offline(cases, known_sources)
+        return _finalize_run(bundle, env_name, mode, items, history)
+
+    resolved_judge: JudgeProvider | None = judge_provider
+    if resolved_judge is None and llm_judge is not None:
+        resolved_judge = CallableJudgeAdapter(llm_judge)
+
+    if mode == "agent":
+        if not space_id:
+            raise ValueError(
+                f"O modo 'agent' exige space_id válido configurado para o ambiente '{env_name}'."
+            )
+        resolved_agent_client = agent_client or AgentModeClient(
+            profile=client.profile if client else None
+        )
+        items = _run_agent_mode(
+            cases=cases,
+            agent_client=resolved_agent_client,
+            space_id=space_id,
+            execution_mode=execution_mode,
+            judge=resolved_judge or HeuristicRubricJudge(),
+            on_event=on_agent_event,
+        )
         return _finalize_run(bundle, env_name, mode, items, history)
 
     if client is None or not space_id:
@@ -184,6 +212,7 @@ def run_benchmark(
             rel_tol=rel_tol,
             abs_tol=abs_tol,
             llm_judge=llm_judge,
+            judge_provider=resolved_judge,
         )
         return _finalize_run(bundle, env_name, mode, items, history)
 
@@ -261,9 +290,11 @@ def _run_live(
     rel_tol: float,
     abs_tol: float,
     llm_judge: LLMJudgeFn | None,
+    judge_provider: JudgeProvider | None = None,
 ) -> list[BenchmarkItemResult]:
     """Avaliação real via Conversation API em 3 camadas: estrutural, equivalência de Result Set e LLM judge."""
     results: list[BenchmarkItemResult] = []
+    effective_judge = judge_provider or (CallableJudgeAdapter(llm_judge) if llm_judge else None)
 
     for idx, case in enumerate(cases):
         cid = case.id or f"case_{idx + 1:02d}"
@@ -297,8 +328,12 @@ def _run_live(
 
         # Casos Agent Mode / sem SQL canônico
         if case.mode == "agent" and not case.ground_truth_sql:
-            if llm_judge is not None:
-                ok_judge, judge_note = llm_judge(case, text_reply or "", gen_sql)
+            if effective_judge is not None:
+                verdict = effective_judge.evaluate(
+                    case,
+                    text_reply or "",
+                    executed_sqls=[gen_sql] if gen_sql else [],
+                )
                 results.append(
                     BenchmarkItemResult(
                         case_id=cid,
@@ -306,14 +341,14 @@ def _run_live(
                         domain=case.domain,
                         difficulty=case.difficulty,
                         mode=case.mode,
-                        status="GOOD" if ok_judge else "BAD",
-                        semantic_score=100.0 if ok_judge else 0.0,
+                        status="GOOD" if verdict.passed else "BAD",
+                        semantic_score=verdict.score,
                         result_match=None,
                         expected_sql=None,
                         generated_sql=gen_sql,
                         latency_ms=round(latency_ms, 2),
-                        error_message=None if ok_judge else judge_note,
-                        details=[f"LLM-as-a-Judge: {judge_note}"],
+                        error_message=None if verdict.passed else verdict.reasoning,
+                        details=[f"LLM-as-a-Judge ({verdict.provider}/{verdict.model}): {verdict.reasoning}"],
                     )
                 )
             else:
@@ -479,3 +514,84 @@ def _run_native_eval(
         )
 
     return items
+
+
+def _run_agent_mode(
+    cases: list[BenchmarkCase],
+    agent_client: AgentModeClient,
+    space_id: str,
+    execution_mode: ExecutionMode,
+    judge: JudgeProvider,
+    on_event: Callable[[AgentStreamEvent], None] | None = None,
+) -> list[BenchmarkItemResult]:
+    """Avaliação via Streaming SSE da Agent Mode API + LLM-as-a-Judge plugável."""
+    results: list[BenchmarkItemResult] = []
+    for idx, case in enumerate(cases):
+        cid = case.id or f"case_{idx + 1:02d}"
+        resp = agent_client.stream_response(
+            space_id=space_id,
+            question=case.question,
+            execution_mode=execution_mode,
+            on_event=on_event,
+        )
+
+        first_sql = resp.executed_sqls[0] if resp.executed_sqls else None
+
+        if resp.status != "COMPLETED":
+            err_detail = (
+                "Volume ainda em indexação (volume_content_search_failed) — tente novamente em breve."
+                if resp.is_volume_indexing_pending
+                else (resp.error_message or f"Agent Mode retornou status={resp.status}")
+            )
+            results.append(
+                BenchmarkItemResult(
+                    case_id=cid,
+                    question=case.question,
+                    domain=case.domain,
+                    difficulty=case.difficulty,
+                    mode="agent",
+                    status="EXCLUDED" if resp.is_volume_indexing_pending else "BAD",
+                    semantic_score=0.0,
+                    result_match=False,
+                    expected_sql=case.ground_truth_sql,
+                    generated_sql=first_sql,
+                    latency_ms=resp.latency_ms,
+                    error_message=err_detail,
+                    details=[
+                        f"AgentMode status={resp.status}",
+                        f"error_code={resp.error_code or 'NONE'}",
+                    ],
+                )
+            )
+            continue
+
+        verdict = judge.evaluate(
+            case=case,
+            answer_text=resp.final_answer,
+            executed_sqls=resp.executed_sqls,
+            reasoning_steps=resp.reasoning_steps,
+            citations=resp.citations,
+        )
+        details = [
+            f"AgentMode ({execution_mode}): {len(resp.executed_sqls)} SQL(s), "
+            f"{len(resp.document_searches)} busca(s) documental(is), {len(resp.citations)} citação(ões)",
+            f"Judge ({verdict.provider}/{verdict.model}): {verdict.reasoning}",
+        ]
+        results.append(
+            BenchmarkItemResult(
+                case_id=cid,
+                question=case.question,
+                domain=case.domain,
+                difficulty=case.difficulty,
+                mode="agent",
+                status="GOOD" if verdict.passed else "BAD",
+                semantic_score=verdict.score,
+                result_match=None,
+                expected_sql=case.ground_truth_sql,
+                generated_sql=first_sql,
+                latency_ms=resp.latency_ms,
+                error_message=None if verdict.passed else verdict.reasoning,
+                details=details,
+            )
+        )
+    return results

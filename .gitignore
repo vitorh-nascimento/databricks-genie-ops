@@ -23,6 +23,12 @@ build/
 *.db-wal
 *.db-shm
 
+# Frontend (Fase 2 Web Dashboard)
+web/node_modules/
+web/dist/
+web/.vite/
+*.tsbuildinfo
+
 # IDE
 .vscode/
 .idea/

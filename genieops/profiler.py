@@ -6,6 +6,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+from genieops.ast_profiler import ASTProfileResult, analyze_query_history_ast
 from genieops.databricks_client import DatabricksClient
 from genieops.models import SpaceBundle
 
@@ -32,6 +33,7 @@ class ProfileReport:
     tables_profiled: int = 0
     suggestions: list[CurationSuggestion] = field(default_factory=list)
     query_history_samples: int = 0
+    ast_profile: ASTProfileResult | None = None
     warnings: list[str] = field(default_factory=list)
 
 
@@ -232,19 +234,109 @@ def profile_space(
                     )
                 )
 
-    # 6. Opcional: consulta read-only em system.query.history
-    if include_query_history and bundle.sources.tables:
-        first_tbl = bundle.sources.tables[0].identifier.split(".")[-1]
-        try:
-            qh = client.execute_readonly_sql(
-                f"SELECT statement_text FROM system.query.history "
-                f"WHERE statement_type = 'SELECT' AND statement_text ILIKE '%{first_tbl}%' "
-                f"AND end_time > current_timestamp() - INTERVAL 30 DAYS "
-                f"ORDER BY end_time DESC LIMIT 20",
-                warehouse_id=warehouse_id,
-            )
-            report.query_history_samples = len(qh.rows)
-        except Exception as exc:
-            report.warnings.append(f"system.query.history indisponível ou sem permissão: {exc}")
+    # 6. Opcional: consulta read-only em system.query.history com parsing AST (sqlglot)
+    if include_query_history and all_sources:
+        short_names = [s.identifier.split(".")[-1] for s in all_sources]
+        like_clauses = " OR ".join(
+            f"statement_text ILIKE '%{re.sub(r'[^A-Za-z0-9_]', '', sn)}%'"
+            for sn in short_names
+            if re.sub(r"[^A-Za-z0-9_]", "", sn)
+        )
+        if like_clauses:
+            try:
+                qh = client.execute_readonly_sql(
+                    f"SELECT statement_text FROM system.query.history "
+                    f"WHERE statement_type = 'SELECT' AND ({like_clauses}) "
+                    f"AND end_time > current_timestamp() - INTERVAL 30 DAYS "
+                    f"ORDER BY end_time DESC LIMIT 100",
+                    warehouse_id=warehouse_id,
+                )
+                sql_samples = [str(row[0]) for row in qh.rows if row and row[0]]
+                report.query_history_samples = len(sql_samples)
+
+                if sql_samples:
+                    ast_res = analyze_query_history_ast(
+                        sql_samples,
+                        known_tables=[s.identifier for s in all_sources],
+                        min_occurrences=1,
+                    )
+                    report.ast_profile = ast_res
+
+                    # Sugestões de Join Specs descobertos no AST
+                    for jp in ast_res.join_patterns[:5]:
+                        if frozenset((jp.left_table, jp.right_table)) in existing_join_pairs:
+                            continue
+                        a1, a2 = jp.left_table.split(".")[-1], jp.right_table.split(".")[-1]
+                        report.suggestions.append(
+                            CurationSuggestion(
+                                table=f"{jp.left_table} <-> {jp.right_table}",
+                                column=f"{jp.left_column} = {jp.right_column}",
+                                category="JOIN_OR_MV_HINT",
+                                reason=(
+                                    f"AST query.history: JOIN observado {jp.count}x "
+                                    f"({a1}.{jp.left_column} = {a2}.{jp.right_column})."
+                                ),
+                                suggested_yaml=(
+                                    f"- left: {{identifier: {jp.left_table}, alias: {a1}}}\n"
+                                    f"  right: {{identifier: {jp.right_table}, alias: {a2}}}\n"
+                                    f"  condition: \"`{a1}`.`{jp.left_column}` = `{a2}`.`{jp.right_column}`\"\n"
+                                    f"  relationship_type: MANY_TO_ONE"
+                                ),
+                            )
+                        )
+
+                    # Sugestões de Filtros frequentes descobertos no AST
+                    for fp in ast_res.filter_patterns[:6]:
+                        short_t = fp.table.split(".")[-1]
+                        samples_txt = (
+                            f" Valores observados: {', '.join(fp.sample_values[:4])}."
+                            if fp.sample_values
+                            else ""
+                        )
+                        if fp.sample_values:
+                            first_val = fp.sample_values[0].replace("'", "''")
+                            snippet_sql = f"`{short_t}`.`{fp.column}` = '{first_val}'"
+                        else:
+                            snippet_sql = f"`{short_t}`.`{fp.column}` {fp.operator} <valor>"
+                        report.suggestions.append(
+                            CurationSuggestion(
+                                table=fp.table,
+                                column=fp.column,
+                                category="FILTER_SNIPPET_HINT",
+                                reason=(
+                                    f"AST query.history: filtro '{fp.operator}' frequente ({fp.count}x) "
+                                    f"em {short_t}.{fp.column}.{samples_txt}"
+                                ),
+                                suggested_yaml=(
+                                    f"# Avalie enable_entity_matching ou sql_snippets.filters:\n"
+                                    f"- display_name: \"Filtro {fp.column}\"\n"
+                                    f"  sql: \"{snippet_sql}\""
+                                ),
+                            )
+                        )
+
+                    # Sugestões de Medidas/Agregações frequentes descobertas no AST
+                    for ap in ast_res.aggregation_patterns[:5]:
+                        if ap.count < 2:
+                            continue
+                        alias_base = re.sub(r"[^a-z0-9_]", "_", ap.function_name.lower())
+                        report.suggestions.append(
+                            CurationSuggestion(
+                                table=ap.table or all_sources[0].identifier,
+                                column=None,
+                                category="MEASURE_SNIPPET_HINT",
+                                reason=(
+                                    f"AST query.history: agregação `{ap.expression_sql}` "
+                                    f"observada {ap.count}x — candidata a medida governada/snippet."
+                                ),
+                                suggested_yaml=(
+                                    f"- alias: {alias_base}_recorrente\n"
+                                    f"  display_name: \"Medida {ap.function_name}\"\n"
+                                    f"  sql: \"{ap.expression_sql}\""
+                                ),
+                            )
+                        )
+            except Exception as exc:
+                report.warnings.append(f"system.query.history indisponível ou sem permissão: {exc}")
 
     return report

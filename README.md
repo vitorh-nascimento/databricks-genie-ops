@@ -60,21 +60,28 @@ init / pull  ──▶  profile  ──▶  lint  ──▶  diff / deploy  ─�
 | Etapa | Comando | Finalidade |
 | :--- | :--- | :--- |
 | **1. Criar / Importar** | `genieops init <nome>` ou `genieops pull <space_id> --profile <p>` | Cria scaffold declarativo ou importa um Genie existente do Databricks para YAML. |
-| **2. Profiling (Read-Only)** | `genieops profile <nome> --env dev [--query-history]` | Analisa metadados/cardinalidade e sugere `entity_matching`, `exclude`, descrições e joins. |
+| **2. Profiling (Read-Only + AST)** | `genieops profile <nome> --env dev [--query-history]` | Analisa metadados/cardinalidade e faz parsing AST (`sqlglot`) em `system.query.history` sugerindo `entity_matching`, `exclude`, joins, filtros e medidas. |
 | **3. Genie Health Check** | `genieops lint <nome> [--validate-sql --env dev] [--strict]` | Audita boas práticas (fontes, `column_configs`, qualificação SQL, benchmark leakage, `text_instructions`, `EXPLAIN`). |
 | **4. Diff & Deploy Seguro** | `genieops diff <nome> --env dev` / `genieops deploy <nome> --env dev` | Compara estado local vs remoto e aplica `create-space`/`update-space` com backup automático de rollback. |
-| **5. Benchmark & Regressão** | `genieops benchmark <nome> --env dev --mode <offline\|live\|eval-run>` | Avalia assertividade (com comparação matemática de Result Sets), latência P50/P95 e salva regressão em SQLite (`history.db`). |
+| **5. Benchmark & Regressão** | `genieops benchmark <nome> --env dev --mode <offline\|live\|eval-run\|agent>` | Avalia assertividade (Result Sets + Streaming SSE Agent Mode + LLM-as-a-Judge plugável), latência P50/P95 e salva regressão em SQLite (`history.db`). |
 | **6. Diagnóstico** | `genieops diagnose <nome> [--run-id <id>]` | Classifica causa raiz das falhas e propõe plano de correção seguindo a hierarquia oficial Databricks (sem auto-mutar). |
-| **7. Coleta de Feedback** | `genieops harvest-feedback <nome> --env prod` | Extrai perguntas com falha/feedback negativo de produção para rascunho de `benchmarks.yaml`. |
+| **7. Coleta de Feedback** | `genieops harvest-feedback <nome> --env prod [--include-audit]` | Extrai falhas/feedback negativo (API + `system.access.audit`) com deduplicação semântica para `benchmarks_draft.yaml`. |
 | **8. Documentação** | `genieops docs <nome>` | Gera `SPEC_TECNICA.md`, `RELATORIO_EXECUTIVO.md`, `relatorio_executivo.html` e `GUIA_USUARIO.md`. |
 | **9. Promoção Multi-Env** | `genieops migrate <nome> --from dev --to prod [--deploy]` | Remapeia `catalog`, `schema` e `/Volumes/...` em todas as superfícies e promove entre workspaces. |
+| **10. Exportação Delta (UC)** | `genieops export-delta <nome> --catalog <cat> --schema <sch> [--execute]` | Exporta `history.db` para as tabelas Delta oficiais Databricks (`genie_opt_runs`, `config_versions`, `eval_results`, `repair_analysis` ou `genie_opt_events`). |
+| **11. Painel Web Local** | `genieops serve [--port 8080]` | Abre o dashboard local **FastAPI + React/Vite/Tailwind** com Health Check, gráficos de regressão, diagnóstico, Agent Mode SSE e preview Delta. |
 
 ---
 
 ## Roadmap em Fases
 
-- **Fase 1 (Implementada):** CLI modular completa (`genieops`), compilador determinístico `serialized_space` v2 + parser reverso (`pull`), `diff`/`deploy` com backup automático, migrador multi-ambiente, Linter estático + `EXPLAIN`, motor de Benchmark (`offline`, `live` com equivalência de Result Sets, wrapper `eval-run`), histórico SQLite com regressão e P50/P95, `diagnose` por hierarquia oficial, `profile` e `harvest-feedback` read-only, geração de docs MD/HTML, CI/CD GitHub Actions e suíte `pytest`.
-- **Fase 2 (Próximas evoluções):** Profiler avançado com parsing AST sobre `system.query.history`, suporte streaming SSE à Agent Mode API com avaliador LLM-as-a-Judge plugável, exportação opcional do `history.db` para tabelas Delta no Unity Catalog, deduplicação semântica no `harvest-feedback` com `system.access.audit` e **Painel Web Local** (FastAPI + React/Vite/Tailwind) para visualização consolidada de todos os espaços.
+- **Fase 1 (Concluída):** CLI modular completa (`genieops`), compilador determinístico `serialized_space` v2 + parser reverso (`pull`), `diff`/`deploy` com backup automático, migrador multi-ambiente, Linter estático + `EXPLAIN`, motor de Benchmark (`offline`, `live` com equivalência de Result Sets, wrapper `eval-run`), histórico SQLite com regressão e P50/P95, `diagnose` por hierarquia oficial, `profile` e `harvest-feedback` read-only, geração de docs MD/HTML, CI/CD GitHub Actions e suíte `pytest`.
+- **Fase 2 (Concluída):**
+  - **AST Profiling (`sqlglot`):** análise sintática sobre `system.query.history` para sugerir `join_specs`, filtros recorrentes e medidas/agregações.
+  - **Agent Mode SSE + LLM-as-a-Judge plugável:** streaming SSE de `/api/2.0/genie/agents/{space_id}/responses` (`STANDARD` / `FLASH`) com avaliadores `heuristic`, `databricks` (Foundation Model API) e `openai` (OpenAI-compatible).
+  - **Exportação Delta no Unity Catalog:** geração de DDL + `MERGE INTO` idempotente alinhado ao schema oficial Databricks (`four_tables` e `events`) com guarda allowlist `genie_opt_*`.
+  - **Harvester Semântico + Audit Log:** integração read-only com `system.access.audit` e deduplicação semântica de reformulações.
+  - **Painel Web Local (`genieops serve`):** API FastAPI + interface React/TypeScript/Vite/Tailwind em `web/`.
 
 ---
 

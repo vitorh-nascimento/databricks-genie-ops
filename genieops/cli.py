@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import webbrowser
 from pathlib import Path
+from typing import Literal
 
 import typer
 from rich.console import Console
@@ -11,6 +13,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from genieops import __version__
+from genieops.agent_mode import AgentModeClient, ExecutionMode
 from genieops.benchmark import BenchmarkMode, run_benchmark
 from genieops.compiler import compile_space, parse_serialized_space
 from genieops.databricks_client import DatabricksClient
@@ -19,6 +22,7 @@ from genieops.diagnoser import FIX_LEVER_HIERARCHY, diagnose_run
 from genieops.docs_generator import generate_docs
 from genieops.harvester import harvest_feedback
 from genieops.history import HistoryStore
+from genieops.judges import JudgeProviderName, create_judge
 from genieops.linter import lint_space
 from genieops.loader import (
     init_space_scaffold,
@@ -29,6 +33,7 @@ from genieops.loader import (
 )
 from genieops.migrator import remap_space_bundle
 from genieops.profiler import profile_space
+from genieops.uc_export import build_uc_export_plan, execute_uc_export_plan
 
 app = typer.Typer(
     name="genieops",
@@ -309,6 +314,12 @@ def cmd_profile(
     )
 
     console.print(f"[bold]Profiling concluído:[/bold] {rep.tables_profiled} fonte(s) analisada(s), {len(rep.suggestions)} sugestão(ões).")
+    if rep.ast_profile is not None:
+        ap = rep.ast_profile
+        console.print(
+            f"[cyan]AST Query History:[/cyan] {ap.queries_parsed} query(ies) parseadas "
+            f"(joins={len(ap.join_patterns)}, filtros={len(ap.filter_patterns)}, agregações={len(ap.aggregation_patterns)})."
+        )
     for w in rep.warnings:
         console.print(f"[yellow]Aviso:[/yellow] {w}")
 
@@ -327,21 +338,32 @@ def cmd_profile(
 def cmd_benchmark(
     name: str = typer.Argument(..., help="Nome do Genie Space em spaces/."),
     env: str = typer.Option("dev", "--env", "-e", help="Ambiente alvo."),
-    mode: BenchmarkMode = typer.Option("offline", "--mode", "-m", help="Modo: offline | live | eval-run."),
+    mode: BenchmarkMode = typer.Option("offline", "--mode", "-m", help="Modo: offline | live | eval-run | agent."),
     profile: str | None = typer.Option(None, "--profile", "-p", help="Sobrescrever perfil CLI."),
     ids: str | None = typer.Option(None, "--ids", help="Lista separada por vírgula de case IDs (staged gate)."),
     only_failed: bool = typer.Option(False, "--only-failed", help="Reexecutar apenas falhas da última rodada."),
     rel_tol: float = typer.Option(1e-4, "--rel-tol", help="Tolerância numérica relativa na comparação de Result Sets."),
     abs_tol: float = typer.Option(1e-2, "--abs-tol", help="Tolerância numérica absoluta na comparação de Result Sets."),
+    execution_mode: ExecutionMode = typer.Option("STANDARD", "--execution-mode", help="Modo Agent Mode: STANDARD | FLASH."),
+    judge: JudgeProviderName = typer.Option("heuristic", "--judge", help="Provedor LLM-as-a-Judge: heuristic | databricks | openai."),
+    judge_endpoint: str | None = typer.Option(None, "--judge-endpoint", help="Endpoint FMAPI ou modelo do juiz."),
 ) -> None:
-    """Executa a suíte de benchmark (offline, live ou eval-run) e registra histórico/regressão em SQLite."""
+    """Executa a suíte de benchmark (offline, live, eval-run ou agent SSE) e registra histórico/regressão em SQLite."""
     bundle = load_space(name)
     env_cfg = resolve_env_config(bundle, env)
     history = HistoryStore()
+    eff_profile = profile or env_cfg.profile
 
     client = None
+    agent_client = None
+    judge_provider = None
+
     if mode in ("live", "eval-run"):
-        client = _build_client(profile=profile or env_cfg.profile, warehouse_id=env_cfg.warehouse_id)
+        client = _build_client(profile=eff_profile, warehouse_id=env_cfg.warehouse_id)
+    if mode in ("live", "agent"):
+        judge_provider = create_judge(judge, profile=eff_profile, endpoint=judge_endpoint)
+    if mode == "agent":
+        agent_client = AgentModeClient(profile=eff_profile)
 
     id_list = [i.strip() for i in ids.split(",")] if ids else None
     record, diff = run_benchmark(
@@ -356,6 +378,9 @@ def cmd_benchmark(
         only_failed=only_failed,
         rel_tol=rel_tol,
         abs_tol=abs_tol,
+        judge_provider=judge_provider,
+        agent_client=agent_client,
+        execution_mode=execution_mode,
     )
 
     console.print(
@@ -430,8 +455,11 @@ def cmd_harvest_feedback(
     env: str = typer.Option("prod", "--env", "-e", help="Ambiente de onde coletar conversas/feedbacks."),
     profile: str | None = typer.Option(None, "--profile", "-p", help="Sobrescrever perfil CLI."),
     output: Path | None = typer.Option(None, "--output", "-o", help="Arquivo YAML de rascunho."),
+    include_audit: bool = typer.Option(False, "--include-audit", help="Incluir eventos de feedback em system.access.audit (read-only)."),
+    days: int = typer.Option(30, "--days", help="Janela em dias para consulta em system.access.audit."),
+    dedup_threshold: float = typer.Option(0.78, "--dedup-threshold", help="Limiar de similaridade semântica (0..1) para deduplicação."),
 ) -> None:
-    """Coleta perguntas com falha ou feedback negativo e gera rascunho para benchmarks.yaml."""
+    """Coleta perguntas com falha/feedback negativo (API + audit log), deduplica semanticamente e gera rascunho YAML."""
     bundle = load_space(name)
     env_cfg = resolve_env_config(bundle, env)
     if not env_cfg.space_id:
@@ -440,11 +468,98 @@ def cmd_harvest_feedback(
 
     client = _build_client(profile=profile or env_cfg.profile, warehouse_id=env_cfg.warehouse_id)
     dest = output or (Path("spaces") / name / "benchmarks_draft.yaml")
-    rep = harvest_feedback(name, space_id=env_cfg.space_id, client=client, output_path=dest)
+    existing_qs = [b.question for b in bundle.benchmarks.questions]
+    rep = harvest_feedback(
+        name,
+        space_id=env_cfg.space_id,
+        client=client,
+        output_path=dest,
+        include_audit=include_audit,
+        audit_days=days,
+        warehouse_id=env_cfg.warehouse_id,
+        existing_questions=existing_qs,
+        similarity_threshold=dedup_threshold,
+    )
     console.print(
-        f"[green]Coleta concluída:[/green] {rep.conversations_scanned} conversa(s) analisada(s), "
+        f"[green]Coleta concluída:[/green] {rep.conversations_scanned} conversa(s), "
+        f"{rep.audit_events_scanned} evento(s) audit, {rep.duplicates_merged} duplicata(s) agrupada(s), "
         f"{len(rep.candidates)} candidato(s) salvo(s) em [bold]{rep.draft_path}[/bold]."
     )
+    for w in rep.warnings:
+        console.print(f"[yellow]Aviso:[/yellow] {w}")
+
+
+@app.command("export-delta")
+def cmd_export_delta(
+    name: str = typer.Argument(..., help="Nome do Genie Space em spaces/."),
+    catalog: str = typer.Option(..., "--catalog", help="Catalog de destino no Unity Catalog."),
+    schema: str = typer.Option(..., "--schema", help="Schema de destino no Unity Catalog."),
+    schema_mode: Literal["four_tables", "events"] = typer.Option(
+        "four_tables", "--schema-mode", help="Schema oficial Databricks: four_tables | events."
+    ),
+    env: str = typer.Option("dev", "--env", "-e", help="Ambiente para resolução de perfil/warehouse."),
+    profile: str | None = typer.Option(None, "--profile", "-p", help="Sobrescrever perfil CLI."),
+    output_sql: Path | None = typer.Option(None, "--output-sql", "-o", help="Salvar script SQL DDL+MERGE."),
+    execute: bool = typer.Option(False, "--execute", help="Executar DDL+MERGE no SQL Warehouse (opt-in explícito)."),
+    limit: int = typer.Option(50, "--limit", help="Máximo de rodadas históricas a exportar."),
+) -> None:
+    """Exporta o histórico SQLite (history.db) para tabelas Delta oficiais (`genie_opt_*`) no Unity Catalog."""
+    bundle = load_space(name)
+    env_cfg = resolve_env_config(bundle, env)
+    history = HistoryStore()
+    dest_sql = output_sql or (Path(".genieops") / "staging" / f"{name}_uc_export_{schema_mode}.sql")
+
+    plan = build_uc_export_plan(
+        bundle,
+        history,
+        catalog=catalog,
+        schema=schema,
+        schema_mode=schema_mode,
+        space_id=env_cfg.space_id,
+        limit=limit,
+        output_sql_path=dest_sql,
+    )
+    console.print(
+        Panel.fit(
+            f"Space: [bold]{name}[/bold] | Destino: [cyan]{plan.catalog}.{plan.schema}[/cyan]\n"
+            f"Schema: [bold]{plan.schema_mode}[/bold] | Rodadas: {plan.runs_exported} | "
+            f"DDLs: {len(plan.ddl_statements)} | MERGEs: {len(plan.dml_statements)}\n"
+            f"Arquivo SQL gerado: [cyan]{plan.output_sql_path}[/cyan]",
+            title="GenieOps Export Delta (Unity Catalog)",
+        )
+    )
+
+    if execute:
+        client = _build_client(profile=profile or env_cfg.profile, warehouse_id=env_cfg.warehouse_id)
+        execute_uc_export_plan(plan, client=client, warehouse_id=env_cfg.warehouse_id)
+        console.print("[green]Exportação Delta executada com sucesso no Unity Catalog![/green]")
+    else:
+        console.print("[dim]Modo dry-run seguro. Passe `--execute` para aplicar no SQL Warehouse.[/dim]")
+
+
+@app.command("serve")
+def cmd_serve(
+    host: str = typer.Option("127.0.0.1", "--host", help="Host de bind local."),
+    port: int = typer.Option(8080, "--port", help="Porta HTTP do Painel Web Local."),
+    no_browser: bool = typer.Option(False, "--no-browser", help="Não abrir navegador automaticamente."),
+) -> None:
+    """Inicia o Painel Web Local (FastAPI + React/Vite/Tailwind) para observabilidade dos Genie Spaces."""
+    import uvicorn
+
+    from genieops.web_api import create_app
+
+    url = f"http://{host}:{port}"
+    console.print(
+        Panel.fit(
+            f"Painel Web Databricks GenieOps rodando em [bold cyan]{url}[/bold cyan]\n"
+            f"API OpenAPI Docs: [cyan]{url}/docs[/cyan]\n"
+            f"Pressione Ctrl+C para encerrar.",
+            title="GenieOps Dashboard (Fase 2)",
+        )
+    )
+    if not no_browser:
+        webbrowser.open(url)
+    uvicorn.run(create_app(), host=host, port=port, log_level="info")
 
 
 @app.command("docs")
