@@ -69,7 +69,7 @@ init / pull  ──▶  profile  ──▶  lint  ──▶  diff / deploy  ─�
 | **8. Documentação** | `genieops docs <nome>` | Gera `SPEC_TECNICA.md`, `RELATORIO_EXECUTIVO.md`, `relatorio_executivo.html` e `GUIA_USUARIO.md`. |
 | **9. Promoção Multi-Env** | `genieops migrate <nome> --from dev --to prod [--deploy]` | Remapeia `catalog`, `schema` e `/Volumes/...` em todas as superfícies e promove entre workspaces. |
 | **10. Exportação Delta (UC)** | `genieops export-delta <nome> --catalog <cat> --schema <sch> [--execute]` | Exporta `history.db` para as tabelas Delta oficiais Databricks (`genie_opt_runs`, `config_versions`, `eval_results`, `repair_analysis` ou `genie_opt_events`). |
-| **11. Painel Web Local** | `genieops serve [--port 8080]` | Abre o dashboard local **FastAPI + React/Vite/Tailwind** com Health Check, gráficos de regressão, diagnóstico, Agent Mode SSE e preview Delta. |
+| **11. Painel Web Local** | `genieops serve [--port 8765]` | Abre o dashboard local **FastAPI + React/Vite/Tailwind** com Health Check, gráficos de regressão, diagnóstico, Agent Mode SSE e preview Delta. |
 
 ---
 

@@ -540,7 +540,7 @@ def cmd_export_delta(
 @app.command("serve")
 def cmd_serve(
     host: str = typer.Option("127.0.0.1", "--host", help="Host de bind local."),
-    port: int = typer.Option(8080, "--port", help="Porta HTTP do Painel Web Local."),
+    port: int = typer.Option(8765, "--port", help="Porta HTTP do Painel Web Local."),
     no_browser: bool = typer.Option(False, "--no-browser", help="Não abrir navegador automaticamente."),
 ) -> None:
     """Inicia o Painel Web Local (FastAPI + React/Vite/Tailwind) para observabilidade dos Genie Spaces."""
