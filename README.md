@@ -110,8 +110,11 @@ npm.cmd install
 npm.cmd run build
 cd ..
 
-# Iniciar o Painel Web Local em http://127.0.0.1:8765
+# Iniciar o Painel Web Local em http://genieops.localhost:8765 (ou usar .\start.ps1)
 genieops serve
+# ou com launcher dedicado (Single-Server ou -Dev na porta 5765):
+.\start.ps1
+.\start.ps1 -Dev
 ```
 
 > Em sistemas Linux/macOS, use `npm install` e `npm run build`. No PowerShell Windows, `npm.cmd` evita bloqueios de `ExecutionPolicy`.
@@ -169,9 +172,9 @@ genieops serve
 
 ---
 
-## Painel Web Local (`genieops serve`)
+## Painel Web Local (`genieops serve` / `.\start.ps1`)
 
-O dashboard local roda por padrão em `http://127.0.0.1:8765` (escolhida para não conflitar com portas comuns como `8080`, `3000` ou `8000`) e oferece 5 visões integradas:
+O dashboard local roda por padrão em **`http://genieops.localhost:8765`** (e modo dev Vite na porta dedicada **`5765`** via `.\start.ps1 -Dev`), isolando origem/cookies e evitando conflitos com portas comuns (`8000`, `8080`, `8185`, `5173`, `5185`, `3000`). Oferece 5 visões integradas:
 
 1. **Health Check & Fontes:** Health Score consolidado, filtro por severidade (`ERROR`/`WARNING`/`INFO`), recomendações acionáveis e inventário de tabelas, Metric Views e UC Volumes.
 2. **Benchmarks & Regressões:** gráfico SVG de tendência histórica de assertividade (com meta >= 90%), execução de benchmark offline com 1 clique, badges de regressão (`FIXED` / `REGRESSED`) e detalhamento por pergunta.

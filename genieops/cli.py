@@ -549,16 +549,17 @@ def cmd_serve(
     from genieops.web_api import create_app
 
     url = f"http://{host}:{port}"
+    friendly_url = f"http://genieops.localhost:{port}" if host in ("127.0.0.1", "localhost") else url
     console.print(
         Panel.fit(
-            f"Painel Web Databricks GenieOps rodando em [bold cyan]{url}[/bold cyan]\n"
-            f"API OpenAPI Docs: [cyan]{url}/docs[/cyan]\n"
+            f"Painel Web Databricks GenieOps rodando em [bold cyan]{friendly_url}[/bold cyan] (ou {url})\n"
+            f"API OpenAPI Docs: [cyan]{friendly_url}/docs[/cyan]\n"
             f"Pressione Ctrl+C para encerrar.",
             title="GenieOps Dashboard (Fase 2)",
         )
     )
     if not no_browser:
-        webbrowser.open(url)
+        webbrowser.open(friendly_url)
     uvicorn.run(create_app(), host=host, port=port, log_level="info")
 
 
