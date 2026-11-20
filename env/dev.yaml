@@ -1,0 +1,9 @@
+# Configurações padrão do ambiente DEV (sobrescritas por space.yaml se informado)
+name: dev
+profile: dev-workspace
+warehouse_id: "<DEV_SQL_WAREHOUSE_ID>"
+catalog: analytics_dev
+schema: sales_gold
+volume_catalog: analytics_dev
+volume_schema: sales_docs
+parent_path: /Workspace/Shared/genie_spaces/dev

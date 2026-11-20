@@ -1,0 +1,149 @@
+tables:
+  - identifier: analytics_dev.sales_gold.fct_pedidos
+    description:
+      - Tabela fato granular de pedidos comerciais (1 linha por pedido), incluindo competência de faturamento, receita líquida, desconto, canal e status.
+    column_configs:
+      - column_name: id_pedido
+        exclude: true
+      - column_name: _ingestion_ts
+        exclude: true
+      - column_name: id_cliente
+        description:
+          - Chave estrangeira do cliente para junção com dim_clientes.
+      - column_name: data_pedido
+        description:
+          - Data cronológica de criação do pedido pelo cliente no formato YYYY-MM-DD.
+        synonyms:
+          - data da compra
+          - data da venda
+      - column_name: competencia_faturamento
+        description:
+          - Mês de competência contábil do faturamento no formato YYYY-MM. Utilize sempre esta coluna para fechamento mensal de receita.
+        synonyms:
+          - mês de faturamento
+          - competência
+          - período contábil
+        enable_entity_matching: true
+        enable_format_assistance: true
+      - column_name: status_pedido
+        description:
+          - Situação operacional do pedido (Faturado, Cancelado, Pendente, Devolvido).
+        synonyms:
+          - status
+          - situação do pedido
+        enable_entity_matching: true
+        enable_format_assistance: true
+      - column_name: canal_venda
+        description:
+          - Canal comercial de origem da venda (E-commerce, Inside Sales, Marketplace, Parceiros).
+        synonyms:
+          - canal
+          - origem da venda
+        enable_entity_matching: true
+        enable_format_assistance: true
+      - column_name: regiao
+        description:
+          - Macrorregião geográfica de atendimento comercial (Sudeste, Sul, Nordeste, Centro-Oeste, Norte).
+        synonyms:
+          - região comercial
+          - praça
+        enable_entity_matching: true
+        enable_format_assistance: true
+      - column_name: forma_pagamento
+        description:
+          - Meio de pagamento utilizado no pedido (Pix, Cartão Corporativo, Boleto, Transferência).
+        synonyms:
+          - meio de pagamento
+          - pagamento
+        enable_entity_matching: true
+        enable_format_assistance: true
+      - column_name: valor_bruto
+        description:
+          - Valor bruto do pedido antes de descontos em Reais (BRL).
+      - column_name: valor_desconto
+        description:
+          - Valor total de desconto concedido no pedido em Reais (BRL).
+      - column_name: valor_liquido
+        description:
+          - Receita líquida faturada do pedido (valor_bruto menos valor_desconto) em Reais (BRL).
+        synonyms:
+          - receita líquida
+          - faturamento líquido
+          - net revenue
+
+  - identifier: analytics_dev.sales_gold.dim_clientes
+    description:
+      - Dimensão cadastral de clientes B2B e B2C com segmento, porte empresarial, UF e data de aquisição.
+    column_configs:
+      - column_name: id_cliente
+        description:
+          - Identificador único do cliente (chave primária de dim_clientes).
+      - column_name: nome_cliente
+        description:
+          - Razão social ou nome fantasia do cliente.
+        synonyms:
+          - cliente
+          - conta
+      - column_name: segmento
+        description:
+          - Segmento de atuação do cliente (Enterprise, Mid-Market, SMB, Varejo).
+        synonyms:
+          - segmento de cliente
+          - carteira
+        enable_entity_matching: true
+        enable_format_assistance: true
+      - column_name: porte_empresa
+        description:
+          - Porte empresarial classificado por faixa de faturamento (Grande, Médio, Pequeno).
+        synonyms:
+          - porte
+        enable_entity_matching: true
+        enable_format_assistance: true
+      - column_name: uf
+        description:
+          - Sigla da unidade federativa (estado) da sede do cliente (ex. SP, RJ, MG, RS).
+        synonyms:
+          - estado
+        enable_entity_matching: true
+        enable_format_assistance: true
+      - column_name: data_cadastro
+        description:
+          - Data de aquisição/cadastro inicial do cliente (YYYY-MM-DD).
+
+metric_views:
+  - identifier: analytics_dev.sales_gold.mv_kpis_comerciais
+    description:
+      - Metric View governada contendo indicadores oficiais de receita líquida, ticket médio, taxa de desconto e volume de pedidos faturados. Use MEASURE() para consultar suas medidas.
+    column_configs:
+      - column_name: competencia_faturamento
+        description:
+          - Mês de competência contábil (YYYY-MM).
+        enable_entity_matching: true
+        enable_format_assistance: true
+      - column_name: regiao
+        description:
+          - Macrorregião comercial.
+        enable_entity_matching: true
+        enable_format_assistance: true
+      - column_name: canal_venda
+        description:
+          - Canal comercial de vendas.
+        enable_entity_matching: true
+        enable_format_assistance: true
+      - column_name: receita_liquida_total
+        description:
+          - Medida governada de receita líquida de pedidos faturados.
+        synonyms:
+          - faturamento oficial
+          - receita oficial
+      - column_name: ticket_medio
+        description:
+          - Medida governada de ticket médio por pedido faturado.
+      - column_name: taxa_desconto_pct
+        description:
+          - Percentual médio de desconto concedido sobre o valor bruto.
+
+volumes:
+  - path: /Volumes/analytics_dev/sales_docs/politicas_comerciais
+    description:
+      - Manual de política comercial, alçadas de aprovação de desconto, regras de devolução e SLA de faturamento (PDF/MD). Consultar via Agent Mode e citar o arquivo fonte.

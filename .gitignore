@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+
+# Environment & Secrets
+.env
+.env.local
+*.secret
+
+# GenieOps local state & backups
+.genieops/history.db
+.genieops/backups/
+.genieops/staging/
+*.db
+*.db-wal
+*.db-shm
+
+# IDE
+.vscode/
+.idea/
+.DS_Store

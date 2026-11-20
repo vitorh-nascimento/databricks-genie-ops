@@ -1,0 +1,75 @@
+# Relatório Executivo de Qualidade — {{ space.title }}
+
+**Space:** `{{ space.name }}` | **Responsável:** {{ space.owner or "Data & Analytics Team" }} | **Gerado em:** {{ generated_at }}
+**Status de Prontidão para Produção:** **{{ readiness_label }}**
+
+---
+
+## 1. Resumo Executivo
+
+| Indicador | Valor |
+| :--- | :--- |
+| **Health Score (Linter)** | **{{ lint.health_score }}/100** (Erros: {{ lint.error_count }} / Avisos: {{ lint.warning_count }} / Infos: {{ lint.info_count }}) |
+| **Fontes Governadas** | {{ sources.tables | length }} tabela(s), {{ sources.metric_views | length }} Metric View(s), {{ sources.volumes | length }} Volume(s) |
+| **Cobertura de Benchmark** | {{ benchmarks.questions | length }} caso(s) cadastrados |
+{% if latest_run %}
+| **Última Assertividade ({{ latest_run.mode }})** | **{{ "%.1f"|format(latest_run.accuracy_pct) }}%** ({{ latest_run.passed }}/{{ latest_run.total }} aprovados) |
+| **Latência (Média / P50 / P95)** | {{ "%.1f"|format(latest_run.avg_latency_ms) }}ms / {{ "%.1f"|format(latest_run.p50_latency_ms) }}ms / {{ "%.1f"|format(latest_run.p95_latency_ms) }}ms |
+| **Hash da Configuração** | `{{ latest_run.config_hash }}` (`{{ latest_run.run_id }}`) |
+{% else %}
+| **Última Assertividade** | _Nenhuma execução registrada no history.db_ |
+{% endif %}
+
+{% if regression %}
+### Evolução vs Rodada Anterior (`{{ regression.previous_run_id }}` → `{{ regression.current_run_id }}`)
+- **Score:** {{ "%.1f"|format(regression.previous_accuracy) }}% → **{{ "%.1f"|format(regression.current_accuracy) }}%** ({{ "%+.2f"|format(regression.delta_accuracy) }} pp)
+- **Corrigidos (`BAD → GOOD`):** {{ regression.fixed | length }}
+- **Regressões (`GOOD → BAD`):** {{ regression.regressed | length }}
+- **Inalterados:** {{ regression.unchanged | length }}
+{% endif %}
+
+---
+
+## 2. Auditoria de Saúde (Genie Health Check)
+
+{% if lint.issues %}
+| Severidade | Código | Superfície | Descrição |
+| :---: | :---: | :--- | :--- |
+{% for issue in lint.issues %}
+| **{{ issue.severity }}** | `{{ issue.code }}` | `{{ issue.surface }}` | {{ issue.message }} |
+{% endfor %}
+{% else %}
+Nenhum problema detectado pelo Linter. Todas as regras estáticas de curadoria passaram com sucesso.
+{% endif %}
+
+---
+
+## 3. Histórico de Execuções de Benchmark
+
+{% if recent_runs %}
+| Run ID | Data (UTC) | Ambiente | Modo | Assertividade | PASS / FAIL / REVIEW | P50 (ms) | P95 (ms) |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+{% for r in recent_runs %}
+| `{{ r.run_id }}` | {{ r.created_at }} | `{{ r.env }}` | `{{ r.mode }}` | **{{ "%.1f"|format(r.accuracy_pct) }}%** | {{ r.passed }} / {{ r.failed }} / {{ r.needs_review }} | {{ "%.1f"|format(r.p50_latency_ms) }} | {{ "%.1f"|format(r.p95_latency_ms) }} |
+{% endfor %}
+{% else %}
+_Sem execuções registradas. Execute `genieops benchmark {{ space.name }} --env dev --mode offline`._
+{% endif %}
+
+---
+
+## 4. Matriz Detalhada de Testes (Última Rodada)
+
+{% if latest_run and latest_run.items %}
+| ID | Domínio | Dificuldade | Modo | Pergunta | Status | Latência (ms) |
+| :--- | :--- | :---: | :---: | :--- | :---: | :---: |
+{% for it in latest_run.items %}
+| `{{ it.case_id }}` | {{ it.domain }} | {{ it.difficulty }} | {{ it.mode }} | {{ it.question }} | **{{ it.status }}** | {{ "%.1f"|format(it.latency_ms) }} |
+{% endfor %}
+{% else %}
+| ID | Domínio | Dificuldade | Modo | Pergunta |
+| :--- | :--- | :---: | :---: | :--- |
+{% for b in benchmarks.questions %}
+| `{{ b.id or loop.index }}` | {{ b.domain }} | {{ b.difficulty }} | {{ b.mode }} | {{ b.question }} |
+{% endfor %}
+{% endif %}

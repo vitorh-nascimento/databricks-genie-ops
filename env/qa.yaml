@@ -1,0 +1,9 @@
+# Configurações padrão do ambiente QA / Homologação
+name: qa
+profile: qa-workspace
+warehouse_id: "<QA_SQL_WAREHOUSE_ID>"
+catalog: analytics_qa
+schema: sales_gold
+volume_catalog: analytics_qa
+volume_schema: sales_docs
+parent_path: /Workspace/Shared/genie_spaces/qa

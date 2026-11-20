@@ -1,0 +1,9 @@
+# Configurações padrão do ambiente PROD
+name: prod
+profile: prod-workspace
+warehouse_id: "<PROD_SQL_WAREHOUSE_ID>"
+catalog: analytics_prod
+schema: sales_gold
+volume_catalog: analytics_prod
+volume_schema: sales_docs
+parent_path: /Workspace/Shared/genie_spaces/prod

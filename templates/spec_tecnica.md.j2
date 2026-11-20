@@ -1,0 +1,155 @@
+# Especificação Técnica — {{ space.title }}
+
+> **Gerado automaticamente pelo Databricks GenieOps** em {{ generated_at }}
+> **Identificador do Space:** `{{ space.name }}` | **Responsável:** {{ space.owner or "Não informado" }} | **Health Score:** **{{ lint.health_score }}/100**
+
+---
+
+## 1. Visão Geral & Escopo
+
+- **Descrição:** {{ space.description }}
+- **Público-Alvo:** {{ space.target_audience or "Usuários de negócio e analistas de dados" }}
+- **Domínios Cobertos:** {{ space.domains | join(", ") if space.domains else "Geral" }}
+
+### Arquitetura Semântica
+
+```mermaid
+flowchart LR
+    User(["Usuário de Negócio"]) -->|Linguagem Natural| Genie["Databricks Genie Agent<br/>{{ space.title }}"]
+{% for tbl in sources.tables %}
+    Genie -->|SQL| T{{ loop.index }}[("Tabela: {{ tbl.identifier.split('.')[-1] }}")]
+{% endfor %}
+{% for mv in sources.metric_views %}
+    Genie -->|MEASURE()| MV{{ loop.index }}[("Metric View: {{ mv.identifier.split('.')[-1] }}")]
+{% endfor %}
+{% for vol in sources.volumes %}
+    Genie -->|Agent Mode Docs| V{{ loop.index }}["Volume: {{ vol.path.split('/')[-1] }}"]
+{% endfor %}
+```
+
+---
+
+## 2. Ambientes Configurados
+
+| Ambiente | Profile CLI | Catalog | Schema | Parent Path |
+| :--- | :--- | :--- | :--- | :--- |
+{% for env_key, env_val in space.environments.items() %}
+| `{{ env_key }}` | `{{ env_val.profile or "—" }}` | `{{ env_val.catalog or "—" }}` | `{{ env_val.schema_name or "—" }}` | `{{ env_val.parent_path or "—" }}` |
+{% endfor %}
+
+---
+
+## 3. Catálogo de Fontes de Dados (Unity Catalog)
+
+{% if sources.tables %}
+### 3.1. Tabelas
+{% for tbl in sources.tables %}
+#### `{{ tbl.identifier }}`
+{{ tbl.description | join(" ") if tbl.description else "_Sem descrição cadastrada._" }}
+
+| Coluna | Descrição | Sinônimos | Entity Matching | Format Assist | Excluída |
+| :--- | :--- | :--- | :---: | :---: | :---: |
+{% for col in tbl.column_configs %}
+| `{{ col.column_name }}` | {{ col.description | join(" ") if col.description else "—" }} | {{ col.synonyms | join(", ") if col.synonyms else "—" }} | {{ "Sim" if col.enable_entity_matching else "Não" }} | {{ "Sim" if col.enable_format_assistance else "Não" }} | {{ "Sim" if col.exclude else "Não" }} |
+{% endfor %}
+
+{% endfor %}
+{% endif %}
+
+{% if sources.metric_views %}
+### 3.2. Metric Views Governadas
+{% for mv in sources.metric_views %}
+#### `{{ mv.identifier }}`
+{{ mv.description | join(" ") if mv.description else "_Sem descrição cadastrada._" }}
+
+| Dimensão / Medida | Descrição | Sinônimos | Entity Matching |
+| :--- | :--- | :--- | :---: |
+{% for col in mv.column_configs %}
+| `{{ col.column_name }}` | {{ col.description | join(" ") if col.description else "—" }} | {{ col.synonyms | join(", ") if col.synonyms else "—" }} | {{ "Sim" if col.enable_entity_matching else "Não" }} |
+{% endfor %}
+
+{% endfor %}
+{% endif %}
+
+{% if sources.volumes %}
+### 3.3. UC Volumes (Documentos para Agent Mode)
+| Caminho no Unity Catalog | Descrição & Regra de Roteamento |
+| :--- | :--- |
+{% for vol in sources.volumes %}
+| `{{ vol.path }}` | {{ vol.description | join(" ") if vol.description else "—" }} |
+{% endfor %}
+{% endif %}
+
+---
+
+## 4. Relacionamentos (`join_specs`)
+
+{% if instructions.join_specs %}
+| Esquerda | Direita | Relacionamento | Condição SQL |
+| :--- | :--- | :---: | :--- |
+{% for js in instructions.join_specs %}
+| `{{ js.left.identifier }}` (`{{ js.left.alias }}`) | `{{ js.right.identifier }}` (`{{ js.right.alias }}`) | `{{ js.relationship_type }}` | `{{ js.condition }}` |
+{% endfor %}
+{% else %}
+_Nenhum join spec declarado._
+{% endif %}
+
+---
+
+## 5. SQL Snippets Reutilizáveis
+
+{% if instructions.sql_snippets.measures or instructions.sql_snippets.filters or instructions.sql_snippets.expressions %}
+{% if instructions.sql_snippets.measures %}
+### Medidas (`measures`)
+| Alias | Nome de Exibição | Expressão SQL | Sinônimos |
+| :--- | :--- | :--- | :--- |
+{% for m in instructions.sql_snippets.measures %}
+| `{{ m.alias }}` | {{ m.display_name }} | `{{ m.sql }}` | {{ m.synonyms | join(", ") if m.synonyms else "—" }} |
+{% endfor %}
+{% endif %}
+
+{% if instructions.sql_snippets.filters %}
+### Filtros (`filters`)
+| Nome de Exibição | Expressão SQL | Sinônimos |
+| :--- | :--- | :--- |
+{% for f in instructions.sql_snippets.filters %}
+| {{ f.display_name }} | `{{ f.sql }}` | {{ f.synonyms | join(", ") if f.synonyms else "—" }} |
+{% endfor %}
+{% endif %}
+
+{% if instructions.sql_snippets.expressions %}
+### Expressões (`expressions`)
+| Alias | Nome de Exibição | Expressão SQL |
+| :--- | :--- | :--- |
+{% for e in instructions.sql_snippets.expressions %}
+| `{{ e.alias }}` | {{ e.display_name }} | `{{ e.sql }}` |
+{% endfor %}
+{% endif %}
+{% else %}
+_Nenhum SQL snippet declarado._
+{% endif %}
+
+---
+
+## 6. Instruções Globais (`text_instructions`)
+
+{% if instructions.text_instructions %}
+```text
+{% for line in instructions.text_instructions %}
+{{ line }}
+{% endfor %}
+```
+{% else %}
+_Nenhuma instrução textual global cadastrada._
+{% endif %}
+
+---
+
+## 7. Exemplos SQL de Referência (`example_question_sqls`)
+
+{% for ex in instructions.example_question_sqls %}
+### {{ loop.index }}. {{ ex.question }}
+```sql
+{{ ex.sql }}
+```
+{% endfor %}

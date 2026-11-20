@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relatório Executivo GenieOps — {{ space.title }}</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface-alt: #273549;
+      --border: #334155;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 32px 24px;
+    }
+    .container { max-width: 1180px; margin: 0 auto; }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 28px;
+    }
+    h1 { margin: 0 0 6px 0; font-size: 1.85rem; letter-spacing: -0.02em; }
+    .subtitle { color: var(--muted); font-size: 0.95rem; margin: 0; }
+    .badge {
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .badge.success { background: rgba(34,197,94,0.16); color: #4ade80; border: 1px solid rgba(34,197,94,0.35); }
+    .badge.warning { background: rgba(245,158,11,0.16); color: #fbbf24; border: 1px solid rgba(245,158,11,0.35); }
+    .badge.danger { background: rgba(239,68,68,0.16); color: #f87171; border: 1px solid rgba(239,68,68,0.35); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 20px;
+    }
+    .card-label { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .card-value { font-size: 1.9rem; font-weight: 800; margin: 6px 0 4px 0; color: var(--accent); }
+    .card-meta { color: var(--muted); font-size: 0.85rem; }
+    .bar-bg {
+      height: 8px;
+      border-radius: 999px;
+      background: var(--surface-alt);
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    .bar-fill { height: 100%; background: linear-gradient(90deg, #38bdf8, #22c55e); }
+    section { margin-bottom: 32px; }
+    h2 { font-size: 1.25rem; margin: 0 0 14px 0; color: #e2e8f0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      font-size: 0.9rem;
+    }
+    th, td { padding: 11px 14px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { background: var(--surface-alt); color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    tr:last-child td { border-bottom: none; }
+    code {
+      background: rgba(15,23,42,0.75);
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      color: #7dd3fc;
+      word-break: break-word;
+    }
+    .pill {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .pill-GOOD, .pill-INFO { background: rgba(34,197,94,0.16); color: #4ade80; }
+    .pill-BAD, .pill-ERROR { background: rgba(239,68,68,0.16); color: #f87171; }
+    .pill-NEEDS_REVIEW, .pill-WARNING { background: rgba(245,158,11,0.16); color: #fbbf24; }
+    details summary { cursor: pointer; color: var(--accent); font-size: 0.82rem; }
+    pre {
+      background: #0b1220;
+      padding: 10px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 0.8rem;
+      color: #cbd5e1;
+      margin: 6px 0 0 0;
+    }
+    footer { color: var(--muted); font-size: 0.82rem; text-align: center; padding-top: 16px; border-top: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>{{ space.title }}</h1>
+        <p class="subtitle">Space: <code>{{ space.name }}</code> • Responsável: {{ space.owner or "Data & Analytics" }} • Gerado em {{ generated_at }}</p>
+      </div>
+      <span class="badge {{ readiness_class }}">{{ readiness_label }}</span>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <div class="card-label">Genie Health Score</div>
+        <div class="card-value">{{ lint.health_score }}/100</div>
+        <div class="card-meta">Erros: {{ lint.error_count }} • Avisos: {{ lint.warning_count }} • Infos: {{ lint.info_count }}</div>
+        <div class="bar-bg"><div class="bar-fill" style="width: {{ lint.health_score }}%;"></div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Assertividade (Benchmark)</div>
+        {% if latest_run %}
+        <div class="card-value">{{ "%.1f"|format(latest_run.accuracy_pct) }}%</div>
+        <div class="card-meta">{{ latest_run.passed }}/{{ latest_run.total }} aprovados ({{ latest_run.mode }} / {{ latest_run.env }})</div>
+        <div class="bar-bg"><div class="bar-fill" style="width: {{ latest_run.accuracy_pct }}%;"></div></div>
+        {% else %}
+        <div class="card-value">—</div>
+        <div class="card-meta">Nenhuma rodada executada</div>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <div class="card-label">Latência (P50 / P95)</div>
+        {% if latest_run %}
+        <div class="card-value">{{ "%.0f"|format(latest_run.p50_latency_ms) }}ms</div>
+        <div class="card-meta">P95: {{ "%.0f"|format(latest_run.p95_latency_ms) }}ms • Média: {{ "%.0f"|format(latest_run.avg_latency_ms) }}ms</div>
+        {% else %}
+        <div class="card-value">—</div>
+        <div class="card-meta">Aguardando execução</div>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <div class="card-label">Superfícies Curadas</div>
+        <div class="card-value">{{ (sources.tables | length) + (sources.metric_views | length) + (sources.volumes | length) }}</div>
+        <div class="card-meta">{{ sources.tables | length }} tabelas • {{ sources.metric_views | length }} Metric Views • {{ sources.volumes | length }} Volumes</div>
+      </div>
+    </div>
+
+    {% if regression %}
+    <section>
+      <h2>Comparação de Regressão ({{ regression.previous_run_id }} → {{ regression.current_run_id }})</h2>
+      <div class="card">
+        Score: <strong>{{ "%.1f"|format(regression.previous_accuracy) }}%</strong> → <strong>{{ "%.1f"|format(regression.current_accuracy) }}%</strong>
+        ({{ "%+.2f"|format(regression.delta_accuracy) }} pp) •
+        Fixed: <strong>{{ regression.fixed | length }}</strong> •
+        Regressed: <strong>{{ regression.regressed | length }}</strong> •
+        Unchanged: <strong>{{ regression.unchanged | length }}</strong>
+      </div>
+    </section>
+    {% endif %}
+
+    <section>
+      <h2>Genie Health Check (Linter)</h2>
+      {% if lint.issues %}
+      <table>
+        <thead>
+          <tr><th>Severidade</th><th>Código</th><th>Superfície</th><th>Achado &amp; Recomendação</th></tr>
+        </thead>
+        <tbody>
+          {% for issue in lint.issues %}
+          <tr>
+            <td><span class="pill pill-{{ issue.severity }}">{{ issue.severity }}</span></td>
+            <td><code>{{ issue.code }}</code></td>
+            <td><code>{{ issue.surface }}</code></td>
+            <td>{{ issue.message }}{% if issue.recommendation %}<br /><small style="color:#94a3b8;">→ {{ issue.recommendation }}</small>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="card">Nenhum problema encontrado. Curadoria 100% aderente às boas práticas Databricks Genie.</div>
+      {% endif %}
+    </section>
+
+    <section>
+      <h2>Matriz de Benchmark ({{ latest_run.items | length if latest_run else benchmarks.questions | length }} casos)</h2>
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Domínio</th><th>Dif.</th><th>Pergunta &amp; SQL</th><th>Status</th><th>Latência</th></tr>
+        </thead>
+        <tbody>
+          {% if latest_run and latest_run.items %}
+            {% for it in latest_run.items %}
+            <tr>
+              <td><code>{{ it.case_id }}</code></td>
+              <td>{{ it.domain }}</td>
+              <td>{{ it.difficulty }}</td>
+              <td>
+                {{ it.question }}
+                {% if it.expected_sql or it.generated_sql %}
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+                  {% if it.expected_sql %}<pre>-- Esperado
+{{ it.expected_sql }}</pre>{% endif %}
+                  {% if it.generated_sql %}<pre>-- Gerado
+{{ it.generated_sql }}</pre>{% endif %}
+                </details>
+                {% endif %}
+              </td>
+              <td><span class="pill pill-{{ it.status }}">{{ it.status }}</span></td>
+              <td>{{ "%.1f"|format(it.latency_ms) }}ms</td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            {% for b in benchmarks.questions %}
+            <tr>
+              <td><code>{{ b.id or loop.index }}</code></td>
+              <td>{{ b.domain }}</td>
+              <td>{{ b.difficulty }}</td>
+              <td>{{ b.question }}</td>
+              <td><span class="pill pill-INFO">CADASTRO</span></td>
+              <td>—</td>
+            </tr>
+            {% endfor %}
+          {% endif %}
+        </tbody>
+      </table>
+    </section>
+
+    <footer>
+      Gerado automaticamente por <strong>Databricks GenieOps</strong> (Genie-as-Code Framework)
+    </footer>
+  </div>
+</body>
+</html>

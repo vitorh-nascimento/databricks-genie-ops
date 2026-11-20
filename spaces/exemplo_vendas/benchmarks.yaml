@@ -1,0 +1,222 @@
+questions:
+  - id: bmk_01
+    question: "Qual foi a receita líquida total de pedidos faturados em janeiro de 2026?"
+    ground_truth_sql: "SELECT SUM(valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-01' AND status_pedido = 'Faturado'"
+    expected_tables: ["fct_pedidos"]
+    required_clauses: ["SUM(valor_liquido)", "competencia_faturamento = '2026-01'", "status_pedido"]
+    domain: "Faturamento"
+    difficulty: "easy"
+    tags: ["agregacao", "faturamento"]
+    mode: "chat"
+
+  - id: bmk_02
+    question: "Qual o total de descontos concedidos em fevereiro de 2026?"
+    ground_truth_sql: "SELECT SUM(valor_desconto) AS total_desconto FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-02' AND status_pedido = 'Faturado'"
+    expected_tables: ["fct_pedidos"]
+    required_clauses: ["SUM(valor_desconto)", "2026-02"]
+    domain: "Descontos"
+    difficulty: "easy"
+    tags: ["agregacao", "desconto"]
+    mode: "chat"
+
+  - id: bmk_03
+    question: "Qual a receita líquida faturada por região em março de 2026?"
+    ground_truth_sql: "SELECT regiao, SUM(valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-03' AND status_pedido = 'Faturado' GROUP BY regiao ORDER BY receita_liquida DESC"
+    expected_tables: ["fct_pedidos"]
+    required_clauses: ["GROUP BY regiao", "2026-03"]
+    domain: "Geografia"
+    difficulty: "easy"
+    tags: ["group_by", "regiao"]
+    mode: "chat"
+
+  - id: bmk_04
+    question: "Quantos pedidos foram cancelados por canal de venda em 2026-01?"
+    ground_truth_sql: "SELECT canal_venda, COUNT(*) AS pedidos_cancelados FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-01' AND status_pedido = 'Cancelado' GROUP BY canal_venda ORDER BY pedidos_cancelados DESC"
+    expected_tables: ["fct_pedidos"]
+    required_clauses: ["GROUP BY canal_venda", "Cancelado"]
+    domain: "Operações"
+    difficulty: "easy"
+    tags: ["cancelamento", "canal"]
+    mode: "chat"
+
+  - id: bmk_05
+    question: "Qual a distribuição da receita líquida por forma de pagamento em 2026-02?"
+    ground_truth_sql: "SELECT forma_pagamento, SUM(valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-02' AND status_pedido = 'Faturado' GROUP BY forma_pagamento ORDER BY receita_liquida DESC"
+    expected_tables: ["fct_pedidos"]
+    required_clauses: ["GROUP BY forma_pagamento", "SUM(valor_liquido)"]
+    domain: "Pagamentos"
+    difficulty: "easy"
+    tags: ["pagamento", "group_by"]
+    mode: "chat"
+
+  - id: bmk_06
+    question: "Qual a evolução mensal da receita líquida faturada ao longo de 2026?"
+    ground_truth_sql: "SELECT competencia_faturamento, SUM(valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos WHERE LEFT(competencia_faturamento, 4) = '2026' AND status_pedido = 'Faturado' GROUP BY competencia_faturamento ORDER BY competencia_faturamento"
+    expected_tables: ["fct_pedidos"]
+    required_clauses: ["GROUP BY competencia_faturamento", "ORDER BY competencia_faturamento"]
+    domain: "Faturamento"
+    difficulty: "medium"
+    tags: ["serie_temporal"]
+    mode: "chat"
+
+  - id: bmk_07
+    question: "Quais os 5 clientes com maior receita líquida faturada em 2026?"
+    ground_truth_sql: "SELECT c.nome_cliente, SUM(p.valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' GROUP BY c.nome_cliente ORDER BY receita_liquida DESC LIMIT 5"
+    expected_tables: ["fct_pedidos", "dim_clientes"]
+    required_clauses: ["JOIN", "nome_cliente", "LIMIT 5"]
+    domain: "Clientes"
+    difficulty: "medium"
+    tags: ["join", "ranking"]
+    mode: "chat"
+
+  - id: bmk_08
+    question: "Qual foi o faturamento de clientes do segmento Enterprise na região Sudeste em 2026-01?"
+    ground_truth_sql: "SELECT SUM(p.valor_liquido) AS receita_enterprise_se FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE c.segmento = 'Enterprise' AND p.regiao = 'Sudeste' AND p.competencia_faturamento = '2026-01' AND p.status_pedido = 'Faturado'"
+    expected_tables: ["fct_pedidos", "dim_clientes"]
+    required_clauses: ["Enterprise", "Sudeste", "2026-01"]
+    domain: "Clientes"
+    difficulty: "medium"
+    tags: ["join", "filtros_combinados"]
+    mode: "chat"
+
+  - id: bmk_09
+    question: "Qual a receita líquida por UF para clientes de porte Grande em 2026?"
+    ground_truth_sql: "SELECT c.uf, SUM(p.valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE c.porte_empresa = 'Grande' AND LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' GROUP BY c.uf ORDER BY receita_liquida DESC"
+    expected_tables: ["fct_pedidos", "dim_clientes"]
+    required_clauses: ["porte_empresa", "GROUP BY c.uf"]
+    domain: "Geografia"
+    difficulty: "medium"
+    tags: ["join", "uf"]
+    mode: "chat"
+
+  - id: bmk_10
+    question: "Qual a taxa de cancelamento percentual por região em 2026-01?"
+    ground_truth_sql: "SELECT regiao, ROUND(SUM(CASE WHEN status_pedido = 'Cancelado' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 2) AS taxa_cancelamento_pct FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-01' GROUP BY regiao ORDER BY taxa_cancelamento_pct DESC"
+    expected_tables: ["fct_pedidos"]
+    required_clauses: ["Cancelado", "GROUP BY regiao"]
+    domain: "Operações"
+    difficulty: "hard"
+    tags: ["ratio", "cancelamento"]
+    mode: "chat"
+
+  - id: bmk_11
+    question: "Qual o percentual médio de desconto concedido por canal de venda em 2026-03?"
+    ground_truth_sql: "SELECT canal_venda, ROUND(SUM(valor_desconto) * 100.0 / NULLIF(SUM(valor_bruto), 0), 2) AS pct_desconto FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-03' AND status_pedido = 'Faturado' GROUP BY canal_venda ORDER BY pct_desconto DESC"
+    expected_tables: ["fct_pedidos"]
+    required_clauses: ["valor_desconto", "valor_bruto", "GROUP BY canal_venda"]
+    domain: "Descontos"
+    difficulty: "hard"
+    tags: ["ratio", "desconto"]
+    mode: "chat"
+
+  - id: bmk_12
+    question: "Quantos clientes únicos compraram no canal E-commerce em cada mês de 2026?"
+    ground_truth_sql: "SELECT competencia_faturamento, COUNT(DISTINCT id_cliente) AS clientes_unicos FROM analytics_dev.sales_gold.fct_pedidos WHERE canal_venda = 'E-commerce' AND LEFT(competencia_faturamento, 4) = '2026' AND status_pedido = 'Faturado' GROUP BY competencia_faturamento ORDER BY competencia_faturamento"
+    expected_tables: ["fct_pedidos"]
+    required_clauses: ["COUNT(DISTINCT id_cliente)", "E-commerce"]
+    domain: "Clientes"
+    difficulty: "medium"
+    tags: ["count_distinct", "canal"]
+    mode: "chat"
+
+  - id: bmk_13
+    question: "Qual o ticket médio dos pedidos pagos via Pix em fevereiro de 2026?"
+    ground_truth_sql: "SELECT AVG(valor_liquido) AS ticket_medio_pix FROM analytics_dev.sales_gold.fct_pedidos WHERE forma_pagamento = 'Pix' AND competencia_faturamento = '2026-02' AND status_pedido = 'Faturado'"
+    expected_tables: ["fct_pedidos"]
+    required_clauses: ["AVG(valor_liquido)", "Pix", "2026-02"]
+    domain: "Pagamentos"
+    difficulty: "easy"
+    tags: ["avg", "pagamento"]
+    mode: "chat"
+
+  - id: bmk_14
+    question: "Quais canais de venda tiveram receita líquida oficial acima de 500 mil em 2026-01 segundo a Metric View?"
+    ground_truth_sql: "SELECT canal_venda, MEASURE(receita_liquida_total) AS receita_oficial FROM analytics_dev.sales_gold.mv_kpis_comerciais WHERE competencia_faturamento = '2026-01' GROUP BY ALL HAVING MEASURE(receita_liquida_total) > 500000 ORDER BY receita_oficial DESC"
+    expected_tables: ["mv_kpis_comerciais"]
+    required_clauses: ["MEASURE(receita_liquida_total)", "HAVING"]
+    domain: "KPIs Governados"
+    difficulty: "hard"
+    tags: ["metric_view", "having"]
+    mode: "chat"
+
+  - id: bmk_15
+    question: "Qual o ticket médio e a taxa de desconto oficial por região em 2026-02 na Metric View?"
+    ground_truth_sql: "SELECT regiao, MEASURE(ticket_medio) AS ticket_medio, MEASURE(taxa_desconto_pct) AS taxa_desconto_pct FROM analytics_dev.sales_gold.mv_kpis_comerciais WHERE competencia_faturamento = '2026-02' GROUP BY ALL ORDER BY ticket_medio DESC"
+    expected_tables: ["mv_kpis_comerciais"]
+    required_clauses: ["MEASURE(ticket_medio)", "MEASURE(taxa_desconto_pct)"]
+    domain: "KPIs Governados"
+    difficulty: "medium"
+    tags: ["metric_view"]
+    mode: "chat"
+
+  - id: bmk_16
+    question: "Qual a participação percentual de cada segmento na receita líquida total de 2026?"
+    ground_truth_sql: "WITH seg AS (SELECT c.segmento, SUM(p.valor_liquido) AS receita FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' GROUP BY c.segmento) SELECT segmento, receita, ROUND(receita * 100.0 / SUM(receita) OVER (), 2) AS share_pct FROM seg ORDER BY share_pct DESC"
+    expected_tables: ["fct_pedidos", "dim_clientes"]
+    required_clauses: ["OVER", "segmento"]
+    domain: "Clientes"
+    difficulty: "hard"
+    tags: ["window_function", "share"]
+    mode: "chat"
+
+  - id: bmk_17
+    question: "Quantos novos clientes foram cadastrados por segmento em 2026?"
+    ground_truth_sql: "SELECT segmento, COUNT(*) AS novos_clientes FROM analytics_dev.sales_gold.dim_clientes WHERE YEAR(data_cadastro) = 2026 GROUP BY segmento ORDER BY novos_clientes DESC"
+    expected_tables: ["dim_clientes"]
+    required_clauses: ["data_cadastro", "GROUP BY segmento"]
+    domain: "Clientes"
+    difficulty: "easy"
+    tags: ["aquisicao", "dimensao"]
+    mode: "chat"
+
+  - id: bmk_18
+    question: "Qual a diferença entre valor bruto e valor líquido por status de pedido em 2026-01?"
+    ground_truth_sql: "SELECT status_pedido, SUM(valor_bruto) AS total_bruto, SUM(valor_liquido) AS total_liquido, SUM(valor_bruto - valor_liquido) AS diferenca FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-01' GROUP BY status_pedido"
+    expected_tables: ["fct_pedidos"]
+    required_clauses: ["GROUP BY status_pedido", "valor_bruto", "valor_liquido"]
+    domain: "Faturamento"
+    difficulty: "medium"
+    tags: ["comparativo"]
+    mode: "chat"
+
+  - id: bmk_19
+    question: "Qual foi o crescimento percentual de receita líquida de 2026-02 em relação a 2026-01?"
+    ground_truth_sql: "WITH mensal AS (SELECT competencia_faturamento, SUM(valor_liquido) AS receita FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento IN ('2026-01', '2026-02') AND status_pedido = 'Faturado' GROUP BY competencia_faturamento) SELECT ROUND((MAX(CASE WHEN competencia_faturamento = '2026-02' THEN receita END) - MAX(CASE WHEN competencia_faturamento = '2026-01' THEN receita END)) * 100.0 / NULLIF(MAX(CASE WHEN competencia_faturamento = '2026-01' THEN receita END), 0), 2) AS mom_pct FROM mensal"
+    expected_tables: ["fct_pedidos"]
+    required_clauses: ["2026-01", "2026-02"]
+    domain: "Faturamento"
+    difficulty: "hard"
+    tags: ["mom", "crescimento"]
+    mode: "chat"
+
+  - id: bmk_20
+    question: "Quais pedidos devolvidos em 2026 superaram 10 mil reais de valor líquido?"
+    ground_truth_sql: "SELECT data_pedido, competencia_faturamento, canal_venda, regiao, valor_liquido FROM analytics_dev.sales_gold.fct_pedidos WHERE status_pedido = 'Devolvido' AND LEFT(competencia_faturamento, 4) = '2026' AND valor_liquido > 10000 ORDER BY valor_liquido DESC"
+    expected_tables: ["fct_pedidos"]
+    required_clauses: ["Devolvido", "10000"]
+    domain: "Operações"
+    difficulty: "medium"
+    tags: ["devolucao", "filtro_numerico"]
+    mode: "chat"
+
+  - id: bmk_21
+    question: "Qual é a alçada de aprovação exigida para descontos comerciais acima de 15% e qual documento define essa regra?"
+    ground_truth_sql: null
+    expected_tables: []
+    required_clauses: []
+    domain: "Políticas Comerciais"
+    difficulty: "medium"
+    tags: ["agent_mode", "documentos"]
+    mode: "agent"
+    evaluation_note: "Deve pesquisar o volume politicas_comerciais, informar a alçada correta para descontos > 15% e citar explicitamente o documento fonte."
+
+  - id: bmk_22
+    question: "Compare os pedidos devolvidos de 2026-01 com o prazo máximo de devolução previsto na política comercial."
+    ground_truth_sql: null
+    expected_tables: ["fct_pedidos"]
+    required_clauses: []
+    domain: "Políticas Comerciais"
+    difficulty: "hard"
+    tags: ["agent_mode", "hibrido_sql_docs"]
+    mode: "agent"
+    evaluation_note: "Deve combinar consulta SQL em fct_pedidos (status Devolvido em 2026-01) com busca no volume politicas_comerciais citando o prazo oficial de devolução e o arquivo fonte."

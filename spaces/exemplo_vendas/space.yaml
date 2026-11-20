@@ -1,0 +1,38 @@
+name: exemplo_vendas
+title: Comercial & Receita Corporativa AI-BI
+description: >-
+  Genie Space curado para análise comercial corporativa, receita líquida, descontos,
+  desempenho por canal/região, carteira de clientes B2B/B2C e políticas comerciais (Agent Mode).
+target_audience: Diretoria Comercial, RevOps, Analistas de BI e Executivos de Contas
+owner: Data & Analytics — Squad Comercial
+domains:
+  - Pedidos & Faturamento
+  - Carteira de Clientes
+  - KPIs Comerciais Governados
+  - Políticas Comerciais & Descontos
+default_env: dev
+environments:
+  dev:
+    profile: dev-workspace
+    warehouse_id: "<DEV_SQL_WAREHOUSE_ID>"
+    catalog: analytics_dev
+    schema: sales_gold
+    volume_catalog: analytics_dev
+    volume_schema: sales_docs
+    parent_path: /Workspace/Shared/genie_spaces/dev/exemplo_vendas
+  qa:
+    profile: qa-workspace
+    warehouse_id: "<QA_SQL_WAREHOUSE_ID>"
+    catalog: analytics_qa
+    schema: sales_gold
+    volume_catalog: analytics_qa
+    volume_schema: sales_docs
+    parent_path: /Workspace/Shared/genie_spaces/qa/exemplo_vendas
+  prod:
+    profile: prod-workspace
+    warehouse_id: "<PROD_SQL_WAREHOUSE_ID>"
+    catalog: analytics_prod
+    schema: sales_gold
+    volume_catalog: analytics_prod
+    volume_schema: sales_docs
+    parent_path: /Workspace/Shared/genie_spaces/prod/exemplo_vendas

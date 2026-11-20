@@ -1,0 +1,46 @@
+name: GenieOps CI — Validação, Linter, Benchmark & Docs
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main]
+
+jobs:
+  validate-genie-spaces:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install GenieOps and dev dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run unit test suite (pytest)
+        run: pytest
+
+      - name: Lint & Offline Benchmark for every registered Genie Space
+        run: |
+          for space_dir in spaces/*/; do
+            space_name=$(basename "$space_dir")
+            echo "=== Validando space: $space_name ==="
+            genieops lint "$space_name" --strict
+            genieops benchmark "$space_name" --env dev --mode offline
+            genieops docs "$space_name"
+          done
+
+      - name: Check compiled payload determinism
+        run: |
+          for space_dir in spaces/*/; do
+            space_name=$(basename "$space_dir")
+            genieops compile "$space_name" --env dev --output "/tmp/${space_name}_1.json"
+            genieops compile "$space_name" --env dev --output "/tmp/${space_name}_2.json"
+            diff -u "/tmp/${space_name}_1.json" "/tmp/${space_name}_2.json"
+          done
