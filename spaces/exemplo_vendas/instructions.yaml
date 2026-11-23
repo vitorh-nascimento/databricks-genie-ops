@@ -39,6 +39,14 @@ sql_snippets:
       synonyms:
         - ano fiscal
 
+sql_functions:
+  - identifier: analytics_dev.sales_gold.fn_receita_liquida_periodo
+    description: "Trusted Asset oficial: receita líquida faturada e ticket médio por região e canal num intervalo de competência (excluindo contas internas)."
+  - identifier: analytics_dev.sales_gold.fn_taxa_cancelamento_regiao
+    description: "Trusted Asset oficial: taxa percentual não-aditiva de cancelamento por região numa competência contábil."
+  - identifier: analytics_dev.sales_gold.fn_top_clientes_segmento
+    description: "Trusted Asset oficial: ranking dos maiores clientes faturados de um segmento em um ano."
+
 example_question_sqls:
   - question: "Qual foi o faturamento líquido mensal por canal no primeiro trimestre de 2025?"
     sql: >-

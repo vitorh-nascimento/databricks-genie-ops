@@ -16,8 +16,9 @@ Este repositório implementa o **Databricks GenieOps**, um framework reutilizáv
    - Toda consulta de profiling, `EXPLAIN`, comparação de Result Sets, `system.query.history` e `system.access.audit` DEVE passar por `genieops.databricks_client.assert_read_only_sql`.
    - Apenas o módulo explícito `uc_export.py` (com opt-in explícito `--execute`) pode emitir DDL/DML restrito exclusivamente às tabelas `genie_opt_*` no `catalog.schema` aprovado pelo usuário.
 3. **Conformidade estrita com Databricks Genie Agents (`serialized_space` v2):**
-   - IDs 32-hex únicos e determinísticos (UUID5), arrays ordenados, `benchmarks` no nível raiz, `text_instructions <= 1` item compilado, zero colunas nuas em `join_specs`/`sql_snippets`, zero Benchmark Leakage entre `example_question_sqls` e `benchmarks.yaml`.
+   - IDs 32-hex únicos e determinísticos (UUID5), arrays ordenados (incluindo `instructions.sql_functions` ordenado por `(id, identifier)`), `benchmarks` no nível raiz, `text_instructions <= 1` item compilado, zero colunas nuas em `join_specs`/`sql_snippets`, zero Benchmark Leakage entre `example_question_sqls` e `benchmarks.yaml` (incluindo `paraphrases`).
    - `update-space` é *full replacement*: nunca fazer deploy sem backup prévio automático em `.genieops/backups/<space>/<env>/`.
+   - Artefatos de `curation_kit.py` (`uc-comments`, `seed-star-schema`) geram scripts SQL/PySpark revisáveis offline sem mutar diretamente o catálogo de produção.
 4. **Hierarquia oficial de correção (menor superfície estruturada primeiro):**
    - Ordem obrigatória no diagnóstico e curadoria:
      1. Escopo e descrições de fontes (`sources.yaml`)

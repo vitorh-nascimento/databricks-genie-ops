@@ -24,6 +24,7 @@ from genieops.models import (
     SourcesConfig,
     SpaceBundle,
     SpaceConfig,
+    SqlFunction,
     SqlSnippetExpression,
     SqlSnippetFilter,
     SqlSnippetMeasure,
@@ -99,10 +100,11 @@ def _compile_table_source(src: TableSource) -> dict[str, Any]:
     return entry
 
 
-def compile_space(bundle: SpaceBundle) -> dict[str, Any]:
+def compile_space(bundle: SpaceBundle, *, expand_paraphrases: bool = False) -> dict[str, Any]:
     """
     Compila um SpaceBundle declarativo para o objeto JSON oficial `serialized_space` v2
     com ordenação estável de chaves/arrays e IDs 32-hex determinísticos.
+    Quando `expand_paraphrases=True`, inclui as paráfrases de cada benchmark como casos adicionais.
     """
     space_name = bundle.space.name
     used_question_ids: set[str] = set()
@@ -270,6 +272,21 @@ def compile_space(bundle: SpaceBundle) -> dict[str, Any]:
     if snippets_out:
         instructions["sql_snippets"] = snippets_out
 
+    if bundle.instructions.sql_functions:
+        fn_items = []
+        for fn in bundle.instructions.sql_functions:
+            fn_id = deterministic_hex_id(
+                space_name,
+                "sql_function",
+                fn.identifier.strip(),
+                used_instruction_ids,
+                explicit_id=fn.id,
+            )
+            fn_items.append({"id": fn_id, "identifier": fn.identifier.strip()})
+        instructions["sql_functions"] = sorted(
+            fn_items, key=lambda x: (x["id"], x["identifier"])
+        )
+
     if instructions:
         payload["instructions"] = instructions
 
@@ -293,6 +310,27 @@ def compile_space(bundle: SpaceBundle) -> dict[str, Any]:
             if bmk.evaluation_note:
                 item["evaluation_note"] = [bmk.evaluation_note.strip()]
             bmk_items.append(item)
+
+            if expand_paraphrases and bmk.paraphrases:
+                base_seed = bmk.id or bmk.question.strip()
+                for p_idx, para in enumerate(bmk.paraphrases, start=1):
+                    para_clean = para.strip()
+                    if not para_clean:
+                        continue
+                    para_id = deterministic_hex_id(
+                        space_name,
+                        "benchmark_paraphrase",
+                        f"{base_seed}::p{p_idx}::{para_clean}",
+                        used_question_ids,
+                    )
+                    p_item: dict[str, Any] = {
+                        "id": para_id,
+                        "question": [para_clean],
+                        "answer": [{"format": "SQL", "content": sql_content}],
+                    }
+                    if bmk.evaluation_note:
+                        p_item["evaluation_note"] = [bmk.evaluation_note.strip()]
+                    bmk_items.append(p_item)
         payload["benchmarks"] = {"questions": sorted(bmk_items, key=lambda x: x["id"])}
 
     return payload
@@ -465,9 +503,19 @@ def parse_serialized_space(
         ],
     )
 
+    sql_functions = [
+        SqlFunction(
+            id=fn.get("id"),
+            identifier=fn["identifier"],
+        )
+        for fn in raw_inst.get("sql_functions", [])
+        if isinstance(fn, dict) and fn.get("identifier")
+    ]
+
     instructions = InstructionsConfig(
         join_specs=join_specs,
         sql_snippets=sql_snippets,
+        sql_functions=sql_functions,
         example_question_sqls=example_sqls,
         text_instructions=text_instructions,
         text_instruction_id=text_instruction_id,
@@ -568,7 +616,7 @@ def diff_payloads(local_payload: dict[str, Any], remote_payload: dict[str, Any])
 
     l_inst = local_payload.get("instructions", {})
     r_inst = remote_payload.get("instructions", {})
-    for key in ("text_instructions", "example_question_sqls", "join_specs"):
+    for key in ("text_instructions", "example_question_sqls", "join_specs", "sql_functions"):
         if l_inst.get(key) != r_inst.get(key):
             l_len = len(l_inst.get(key, []))
             r_len = len(r_inst.get(key, []))

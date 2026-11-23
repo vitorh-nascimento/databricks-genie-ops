@@ -20,13 +20,13 @@ def test_offline_benchmark_and_regression_diff(
     broken.benchmarks.questions[0].expected_tables = ["tabela_fantasma"]
     run1, diff1 = run_benchmark(broken, env_name="dev", mode="offline", history=history)
     assert diff1 is None
-    assert run1.total == 22
-    assert run1.passed == 21
+    assert run1.total == 32
+    assert run1.passed == 31
     assert run1.failed == 1
 
     # Rodada 2: corrigido -> deve registrar fixed=['bmk_01'] e delta positivo
     run2, diff2 = run_benchmark(exemplo_bundle, env_name="dev", mode="offline", history=history)
-    assert run2.passed == 22
+    assert run2.passed == 32
     assert run2.failed == 0
     assert run2.accuracy_pct == 100.0
     assert diff2 is not None

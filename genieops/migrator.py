@@ -162,6 +162,11 @@ def remap_space_bundle(
         e.sql, c = _apply_sql_remap(e.sql, source_env, target_env)
         _bump("sql_snippets.expressions", c)
 
+    # 5b. SQL Functions (Trusted Assets no Unity Catalog)
+    for fn in cloned.instructions.sql_functions:
+        fn.identifier, c = _apply_sql_remap(fn.identifier, source_env, target_env)
+        _bump("sql_functions", c)
+
     # 6. Example Question SQLs
     for ex in cloned.instructions.example_question_sqls:
         ex.sql, c = _apply_sql_remap(ex.sql, source_env, target_env)

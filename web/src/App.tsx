@@ -55,6 +55,8 @@ export function App() {
   const [runDiff, setRunDiff] = useState<RegressionDiff | null>(null);
   const [diagnose, setDiagnose] = useState<DiagnoseResponse | null>(null);
   const [runningBmk, setRunningBmk] = useState<boolean>(false);
+  const [bmkLabel, setBmkLabel] = useState<string>('');
+  const [expandParaphrases, setExpandParaphrases] = useState<boolean>(false);
   const [severityFilter, setSeverityFilter] = useState<'ALL' | 'ERROR' | 'WARNING' | 'INFO'>('ALL');
 
   // Agent Mode SSE Playground state
@@ -139,7 +141,10 @@ export function App() {
     if (!selectedSpace) return;
     setRunningBmk(true);
     try {
-      const res = await triggerOfflineBenchmark(selectedSpace, detail?.space.default_env || 'dev');
+      const res = await triggerOfflineBenchmark(selectedSpace, detail?.space.default_env || 'dev', {
+        label: bmkLabel,
+        expand_paraphrases: expandParaphrases,
+      });
       setSelectedRun(res.run);
       setRunDiff(res.regression_diff);
       await loadPortfolio();
@@ -404,6 +409,15 @@ export function App() {
                           <span className="rounded bg-emerald-950 px-1.5 py-0.5 text-emerald-300">UC Volume</span>
                         </div>
                       ))}
+                      {(detail.instructions.sql_functions ?? []).map((fn) => (
+                        <div key={fn.identifier} className="flex items-center justify-between rounded bg-slate-950/60 px-2.5 py-1.5">
+                          <span className="inline-flex items-center gap-1.5 font-mono text-amber-300">
+                            <FileCode2 className="h-3.5 w-3.5" />
+                            {fn.identifier}
+                          </span>
+                          <span className="rounded bg-amber-950 px-1.5 py-0.5 text-amber-300">Trusted Asset UDF</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -480,19 +494,37 @@ export function App() {
                     >
                       {runs.map((r) => (
                         <option key={r.run_id} value={r.run_id}>
+                          {r.label ? `[${r.label}] ` : ''}
                           {r.run_id} • {r.mode}/{r.env} • {r.accuracy_pct}% ({r.created_at})
                         </option>
                       ))}
                     </select>
                   </div>
-                  <button
-                    onClick={() => void handleRunOffline()}
-                    disabled={runningBmk}
-                    className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-60"
-                  >
-                    <Play className="h-3.5 w-3.5" />
-                    {runningBmk ? 'Executando...' : 'Executar Benchmark Offline'}
-                  </button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      value={bmkLabel}
+                      onChange={(e) => setBmkLabel(e.target.value)}
+                      placeholder="Rótulo da rodada (ex.: Rodada 0)"
+                      className="rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-xs text-slate-200 placeholder:text-slate-500"
+                    />
+                    <label className="inline-flex items-center gap-1.5 text-xs text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={expandParaphrases}
+                        onChange={(e) => setExpandParaphrases(e.target.checked)}
+                        className="rounded border-slate-700"
+                      />
+                      Paráfrases
+                    </label>
+                    <button
+                      onClick={() => void handleRunOffline()}
+                      disabled={runningBmk}
+                      className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-60"
+                    >
+                      <Play className="h-3.5 w-3.5" />
+                      {runningBmk ? 'Executando...' : 'Executar Benchmark Offline'}
+                    </button>
+                  </div>
                 </div>
 
                 <TrendChart runs={runs} />

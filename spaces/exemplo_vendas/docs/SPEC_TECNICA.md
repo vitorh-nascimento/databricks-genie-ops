@@ -1,7 +1,7 @@
 # Especificação Técnica — Comercial & Receita Corporativa AI-BI
 
-> **Gerado automaticamente pelo Databricks GenieOps** em 2026-11-20 17:55 UTC
-> **Identificador do Space:** `exemplo_vendas` | **Responsável:** Data & Analytics — Squad Comercial | **Health Score:** **99/100**
+> **Gerado automaticamente pelo Databricks GenieOps** em 2026-11-23 11:14 UTC
+> **Identificador do Space:** `exemplo_vendas` | **Responsável:** Data & Analytics — Squad Comercial | **Health Score:** **100/100**
 
 ---
 
@@ -20,6 +20,9 @@ flowchart LR
     Genie -->|SQL| T2[("Tabela: dim_clientes")]
     Genie -->|MEASURE()| MV1[("Metric View: mv_kpis_comerciais")]
     Genie -->|Agent Mode Docs| V1["Volume: politicas_comerciais"]
+    Genie -->|Trusted Asset| FN1(["UDF: fn_receita_liquida_periodo"])
+    Genie -->|Trusted Asset| FN2(["UDF: fn_taxa_cancelamento_regiao"])
+    Genie -->|Trusted Asset| FN3(["UDF: fn_top_clientes_segmento"])
 ```
 
 ---
@@ -118,7 +121,17 @@ Metric View governada contendo indicadores oficiais de receita líquida, ticket 
 
 ---
 
-## 6. Instruções Globais (`text_instructions`)
+## 6. SQL Functions / Trusted Assets (`sql_functions`)
+
+| Identificador (Unity Catalog) | Descrição |
+| :--- | :--- |
+| `analytics_dev.sales_gold.fn_receita_liquida_periodo` | Trusted Asset oficial: receita líquida faturada e ticket médio por região e canal num intervalo de competência (excluindo contas internas). |
+| `analytics_dev.sales_gold.fn_taxa_cancelamento_regiao` | Trusted Asset oficial: taxa percentual não-aditiva de cancelamento por região numa competência contábil. |
+| `analytics_dev.sales_gold.fn_top_clientes_segmento` | Trusted Asset oficial: ranking dos maiores clientes faturados de um segmento em um ano. |
+
+---
+
+## 7. Instruções Globais (`text_instructions`)
 
 ```text
 Responda em português objetivo, informando o período de competência analisado e valores em Reais (R$).
@@ -128,7 +141,7 @@ Perguntas sobre alçadas de desconto, políticas comerciais ou regras de devolu�
 
 ---
 
-## 7. Exemplos SQL de Referência (`example_question_sqls`)
+## 8. Exemplos SQL de Referência (`example_question_sqls`)
 
 ### 1. Qual foi o faturamento líquido mensal por canal no primeiro trimestre de 2025?
 ```sql

@@ -1,7 +1,7 @@
 # Guia do Usuário — Comercial & Receita Corporativa AI-BI
 
 > **Público-Alvo:** Diretoria Comercial, RevOps, Analistas de BI e Executivos de Contas
-> **Atualizado em:** 2026-11-20 17:55 UTC
+> **Atualizado em:** 2026-11-23 11:14 UTC
 
 ---
 

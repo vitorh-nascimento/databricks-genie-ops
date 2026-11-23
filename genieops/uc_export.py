@@ -266,6 +266,7 @@ def build_uc_export_plan(
                 "space_name": run.space_name,
                 "env": run.env,
                 "mode": run.mode,
+                "label": run.label,
                 "accuracy_pct": run.accuracy_pct,
                 "passed": run.passed,
                 "failed": run.failed,
@@ -300,6 +301,14 @@ def build_uc_export_plan(
             decision = "ROLL_BACK" if regressed_cnt > 0 else "KEEP"
             cfg_ver_id = f"cfg_{run.run_id}_{run.config_hash[:8]}"
 
+            note_parts = [
+                f"label={run.label}" if run.label else None,
+                f"mode={run.mode}",
+                f"p50={run.p50_latency_ms}ms",
+                f"p95={run.p95_latency_ms}ms",
+            ]
+            notes_text = "; ".join(p for p in note_parts if p)
+
             dml.append(
                 f"MERGE INTO {prefix}.genie_opt_runs AS t\n"
                 f"USING (SELECT {sql_str(run.run_id)} AS run_id) AS s\n"
@@ -319,7 +328,7 @@ def build_uc_export_plan(
                 f"  NULL, NULL, 'kept', TIMESTAMP {sql_str(run.created_at)}, TIMESTAMP {sql_str(run.created_at)},\n"
                 f"  {baseline_score}, {run.accuracy_pct}, {score_delta}, {fixed_cnt}, {regressed_cnt},\n"
                 f"  {run.failed}, {run.passed}, {run.excluded}, {sql_str(decision)},\n"
-                f"  {sql_str(f'mode={run.mode}; p50={run.p50_latency_ms}ms; p95={run.p95_latency_ms}ms')}\n"
+                f"  {sql_str(notes_text)}\n"
                 f")"
             )
 

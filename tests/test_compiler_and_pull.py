@@ -50,12 +50,14 @@ def test_compile_is_deterministic_and_follows_v2_schema(exemplo_bundle: SpaceBun
         [x["id"] for x in inst.get("text_instructions", [])]
         + [x["id"] for x in inst.get("example_question_sqls", [])]
         + [x["id"] for x in inst.get("join_specs", [])]
+        + [x["id"] for x in inst.get("sql_functions", [])]
         + [x["id"] for x in inst.get("sql_snippets", {}).get("measures", [])]
         + [x["id"] for x in inst.get("sql_snippets", {}).get("filters", [])]
         + [x["id"] for x in inst.get("sql_snippets", {}).get("expressions", [])]
     )
     assert len(inst_ids) == len(set(inst_ids))
     assert all(HEX_32_RE.match(i) for i in inst_ids)
+    assert len(inst.get("sql_functions", [])) == 3
 
     # Agent mode benchmark tem content: [] e evaluation_note como array
     agent_bmks = [b for b in p1["benchmarks"]["questions"] if not b["answer"][0]["content"]]
@@ -94,4 +96,5 @@ def test_pull_parse_save_load_compile_roundtrip(
     assert len(reloaded.sources.metric_views) == 1
     assert len(reloaded.sources.volumes) == 1
     assert len(reloaded.instructions.join_specs) == 1
-    assert len(reloaded.benchmarks.questions) == 22
+    assert len(reloaded.instructions.sql_functions) == 3
+    assert len(reloaded.benchmarks.questions) == 32

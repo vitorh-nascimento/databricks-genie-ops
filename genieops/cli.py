@@ -16,6 +16,7 @@ from genieops import __version__
 from genieops.agent_mode import AgentModeClient, ExecutionMode
 from genieops.benchmark import BenchmarkMode, run_benchmark
 from genieops.compiler import compile_space, parse_serialized_space
+from genieops.curation_kit import generate_star_schema_kit, generate_uc_comments_sql
 from genieops.databricks_client import DatabricksClient
 from genieops.deployer import compute_remote_diff, deploy_space
 from genieops.diagnoser import FIX_LEVER_HIERARCHY, diagnose_run
@@ -131,6 +132,11 @@ def cmd_compile(
     name: str = typer.Argument(..., help="Nome do Genie Space em spaces/."),
     env: str | None = typer.Option(None, "--env", "-e", help="Ambiente alvo para remapeamento."),
     output: Path | None = typer.Option(None, "--output", "-o", help="Arquivo JSON de saída."),
+    expand_paraphrases: bool = typer.Option(
+        False,
+        "--expand-paraphrases",
+        help="Expandir paráfrases dos benchmarks como perguntas adicionais no payload v2.",
+    ),
 ) -> None:
     """Compila o Genie Space para o JSON determinístico oficial `serialized_space` v2."""
     bundle = load_space(name)
@@ -139,7 +145,7 @@ def cmd_compile(
         dst_cfg = resolve_env_config(bundle, env)
         bundle, _ = remap_space_bundle(bundle, src_cfg, dst_cfg)
 
-    payload = compile_space(bundle)
+    payload = compile_space(bundle, expand_paraphrases=expand_paraphrases)
     formatted = json.dumps(payload, indent=2, ensure_ascii=False)
     if output:
         output.parent.mkdir(parents=True, exist_ok=True)
@@ -347,6 +353,12 @@ def cmd_benchmark(
     execution_mode: ExecutionMode = typer.Option("STANDARD", "--execution-mode", help="Modo Agent Mode: STANDARD | FLASH."),
     judge: JudgeProviderName = typer.Option("heuristic", "--judge", help="Provedor LLM-as-a-Judge: heuristic | databricks | openai."),
     judge_endpoint: str | None = typer.Option(None, "--judge-endpoint", help="Endpoint FMAPI ou modelo do juiz."),
+    label: str = typer.Option("", "--label", "-l", help="Rótulo da rodada de curadoria (ex.: 'Rodada 0 - Só tabelas')."),
+    expand_paraphrases: bool = typer.Option(
+        False,
+        "--expand-paraphrases",
+        help="Executar também todas as paráfrases cadastradas em benchmarks.yaml.",
+    ),
 ) -> None:
     """Executa a suíte de benchmark (offline, live, eval-run ou agent SSE) e registra histórico/regressão em SQLite."""
     bundle = load_space(name)
@@ -381,11 +393,14 @@ def cmd_benchmark(
         judge_provider=judge_provider,
         agent_client=agent_client,
         execution_mode=execution_mode,
+        label=label,
+        expand_paraphrases=expand_paraphrases,
     )
 
+    label_line = f" | Rodada: [bold magenta]{record.label}[/bold magenta]" if record.label else ""
     console.print(
         Panel.fit(
-            f"Run ID: [bold]{record.run_id}[/bold] | Modo: [cyan]{record.mode}[/cyan] | Env: [cyan]{record.env}[/cyan]\n"
+            f"Run ID: [bold]{record.run_id}[/bold] | Modo: [cyan]{record.mode}[/cyan] | Env: [cyan]{record.env}[/cyan]{label_line}\n"
             f"Assertividade: [bold green]{record.accuracy_pct:.1f}%[/bold green] "
             f"(PASS={record.passed}, FAIL={record.failed}, REVIEW={record.needs_review})\n"
             f"Latência — Média: {record.avg_latency_ms:.1f}ms | P50: {record.p50_latency_ms:.1f}ms | P95: {record.p95_latency_ms:.1f}ms",
@@ -561,6 +576,72 @@ def cmd_serve(
     if not no_browser:
         webbrowser.open(friendly_url)
     uvicorn.run(create_app(), host=host, port=port, log_level="info")
+
+
+@app.command("uc-comments")
+def cmd_uc_comments(
+    name: str = typer.Argument(..., help="Nome do Genie Space em spaces/."),
+    env: str | None = typer.Option(None, "--env", "-e", help="Ambiente alvo para remapeamento de catalog/schema."),
+    output: Path | None = typer.Option(None, "--output", "-o", help="Arquivo SQL de saída."),
+    include_metric_views: bool = typer.Option(
+        True,
+        "--include-metric-views/--tables-only",
+        help="Incluir ou omitir Metric Views no script COMMENT ON.",
+    ),
+) -> None:
+    """Gera script SQL idempotente (COMMENT ON TABLE / ALTER COLUMN COMMENT) para o Unity Catalog."""
+    bundle = load_space(name)
+    if env and env != bundle.space.default_env:
+        src_cfg = resolve_env_config(bundle, bundle.space.default_env)
+        dst_cfg = resolve_env_config(bundle, env)
+        bundle, _ = remap_space_bundle(bundle, src_cfg, dst_cfg)
+
+    sql_text = generate_uc_comments_sql(bundle, include_metric_views=include_metric_views)
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(sql_text, encoding="utf-8")
+        console.print(f"[green]Script de COMMENTs UC salvo em[/green] [bold]{output}[/bold]")
+    else:
+        console.print(sql_text)
+
+
+@app.command("seed-star-schema")
+def cmd_seed_star_schema(
+    catalog: str = typer.Option("analytics_dev", "--catalog", help="Catalog alvo no Unity Catalog."),
+    schema: str = typer.Option("sales_gold", "--schema", help="Schema alvo no Unity Catalog."),
+    output_dir: Path = typer.Option(
+        Path("examples") / "curadoria_vendas",
+        "--output-dir",
+        "-o",
+        help="Diretório de saída do kit de base fictícia + COMMENTs + Trusted Assets.",
+    ),
+    space: str | None = typer.Option(
+        "exemplo_vendas",
+        "--space",
+        help="Space de referência para gerar 02_uc_comments.sql (opcional).",
+    ),
+    rows_pedidos: int = typer.Option(5000, "--rows-pedidos", help="Quantidade de pedidos fictícios."),
+    rows_clientes: int = typer.Option(300, "--rows-clientes", help="Quantidade de clientes fictícios."),
+) -> None:
+    """Gera o kit completo de estudo de curadoria: Star Schema com armadilhas, COMMENTs UC e SQL Functions."""
+    bundle = None
+    if space:
+        try:
+            bundle = load_space(space)
+        except FileNotFoundError:
+            bundle = None
+
+    outputs = generate_star_schema_kit(
+        catalog=catalog,
+        schema=schema,
+        output_dir=output_dir,
+        bundle=bundle,
+        rows_pedidos=rows_pedidos,
+        rows_clientes=rows_clientes,
+    )
+    console.print(f"[green]Kit de Curadoria Star Schema gerado em[/green] [bold]{output_dir}[/bold]:")
+    for key, path in outputs.items():
+        console.print(f"  • {key}: [cyan]{path}[/cyan]")
 
 
 @app.command("docs")

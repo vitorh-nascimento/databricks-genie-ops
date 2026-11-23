@@ -46,18 +46,25 @@ def test_migrate_remaps_all_surfaces(exemplo_bundle: SpaceBundle) -> None:
         assert "analytics_prod.commercial_gold." in ex.sql
 
     chat_bmks = [b for b in remapped.benchmarks.questions if b.ground_truth_sql]
-    assert len(chat_bmks) == 20
+    assert len(chat_bmks) == 30
     for b in chat_bmks:
         assert "analytics_dev" not in (b.ground_truth_sql or "")
         assert "analytics_prod.commercial_gold." in (b.ground_truth_sql or "")
+
+    # SQL Functions (Trusted Assets)
+    assert len(remapped.instructions.sql_functions) == 3
+    for fn in remapped.instructions.sql_functions:
+        assert fn.identifier.startswith("analytics_prod.commercial_gold.")
+        assert "analytics_dev" not in fn.identifier
 
     # Relatório deve listar superfícies tocadas
     assert report.surfaces_touched["tables"] >= 2
     assert report.surfaces_touched["metric_views"] >= 1
     assert report.surfaces_touched["volumes"] >= 1
     assert report.surfaces_touched["join_specs"] >= 2
+    assert report.surfaces_touched["sql_functions"] >= 3
     assert report.surfaces_touched["example_question_sqls"] >= 3
-    assert report.surfaces_touched["benchmarks"] >= 20
+    assert report.surfaces_touched["benchmarks"] >= 30
 
     # Compilação após migração continua válida e sem vestígios do ambiente origem
     compiled_json = str(compile_space(remapped))

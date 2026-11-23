@@ -25,6 +25,9 @@ flowchart LR
 {% for vol in sources.volumes %}
     Genie -->|Agent Mode Docs| V{{ loop.index }}["Volume: {{ vol.path.split('/')[-1] }}"]
 {% endfor %}
+{% for fn in instructions.sql_functions %}
+    Genie -->|Trusted Asset| FN{{ loop.index }}(["UDF: {{ fn.identifier.split('.')[-1] }}"])
+{% endfor %}
 ```
 
 ---
@@ -131,7 +134,21 @@ _Nenhum SQL snippet declarado._
 
 ---
 
-## 6. Instruções Globais (`text_instructions`)
+## 6. SQL Functions / Trusted Assets (`sql_functions`)
+
+{% if instructions.sql_functions %}
+| Identificador (Unity Catalog) | Descrição |
+| :--- | :--- |
+{% for fn in instructions.sql_functions %}
+| `{{ fn.identifier }}` | {{ fn.description or "Função governada registrada no Unity Catalog." }} |
+{% endfor %}
+{% else %}
+_Nenhuma SQL Function (Trusted Asset) declarada._
+{% endif %}
+
+---
+
+## 7. Instruções Globais (`text_instructions`)
 
 {% if instructions.text_instructions %}
 ```text
@@ -145,7 +162,7 @@ _Nenhuma instrução textual global cadastrada._
 
 ---
 
-## 7. Exemplos SQL de Referência (`example_question_sqls`)
+## 8. Exemplos SQL de Referência (`example_question_sqls`)
 
 {% for ex in instructions.example_question_sqls %}
 ### {{ loop.index }}. {{ ex.question }}

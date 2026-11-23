@@ -99,10 +99,10 @@ def test_linter_validate_sql_with_mock_explain(
     mutated.benchmarks.questions[0].ground_truth_sql = "SELECT * FROM analytics_dev.sales_gold.bmk_fail_table"
 
     report = lint_space(mutated, validate_sql=True, client=client, warehouse_id="wh_test")
-    assert report.sql_validated_count == 23  # 3 examples + 20 chat benchmarks
+    assert report.sql_validated_count == 33  # 3 examples + 30 chat benchmarks
     assert report.sql_failed_count == 1
     assert any(i.code == "SQLVAL" and i.severity == "ERROR" for i in report.issues)
-    assert len(runner.calls) == 23
+    assert len(runner.calls) == 33
 
 
 def test_readonly_sql_guard_blocks_mutations() -> None:

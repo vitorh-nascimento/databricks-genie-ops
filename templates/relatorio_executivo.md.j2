@@ -10,8 +10,8 @@
 | Indicador | Valor |
 | :--- | :--- |
 | **Health Score (Linter)** | **{{ lint.health_score }}/100** (Erros: {{ lint.error_count }} / Avisos: {{ lint.warning_count }} / Infos: {{ lint.info_count }}) |
-| **Fontes Governadas** | {{ sources.tables | length }} tabela(s), {{ sources.metric_views | length }} Metric View(s), {{ sources.volumes | length }} Volume(s) |
-| **Cobertura de Benchmark** | {{ benchmarks.questions | length }} caso(s) cadastrados |
+| **Fontes Governadas** | {{ sources.tables | length }} tabela(s), {{ sources.metric_views | length }} Metric View(s), {{ sources.volumes | length }} Volume(s), {{ instructions.sql_functions | length }} SQL Function(s) |
+| **Cobertura de Benchmark** | {{ benchmarks.questions | length }} caso(s) canônicos (+ {{ total_paraphrases }} paráfrases = {{ (benchmarks.questions | length) + total_paraphrases }} variações) |
 {% if latest_run %}
 | **Última Assertividade ({{ latest_run.mode }})** | **{{ "%.1f"|format(latest_run.accuracy_pct) }}%** ({{ latest_run.passed }}/{{ latest_run.total }} aprovados) |
 | **Latência (Média / P50 / P95)** | {{ "%.1f"|format(latest_run.avg_latency_ms) }}ms / {{ "%.1f"|format(latest_run.p50_latency_ms) }}ms / {{ "%.1f"|format(latest_run.p95_latency_ms) }}ms |
@@ -44,16 +44,16 @@ Nenhum problema detectado pelo Linter. Todas as regras estáticas de curadoria p
 
 ---
 
-## 3. Histórico de Execuções de Benchmark
+## 3. Evolução da Acurácia por Rodada de Curadoria
 
-{% if recent_runs %}
-| Run ID | Data (UTC) | Ambiente | Modo | Assertividade | PASS / FAIL / REVIEW | P50 (ms) | P95 (ms) |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-{% for r in recent_runs %}
-| `{{ r.run_id }}` | {{ r.created_at }} | `{{ r.env }}` | `{{ r.mode }}` | **{{ "%.1f"|format(r.accuracy_pct) }}%** | {{ r.passed }} / {{ r.failed }} / {{ r.needs_review }} | {{ "%.1f"|format(r.p50_latency_ms) }} | {{ "%.1f"|format(r.p95_latency_ms) }} |
+{% if evolution_rows %}
+| Rodada / Etapa | Run ID | Ambiente / Modo | Assertividade | Delta (pp) | PASS / FAIL / REVIEW | P50 (ms) | P95 (ms) | Config Hash |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+{% for r in evolution_rows %}
+| **{{ r.label }}** | `{{ r.run_id }}` | `{{ r.env }}` / `{{ r.mode }}` | **{{ "%.1f"|format(r.accuracy_pct) }}%** | {{ ("%+.2f pp"|format(r.delta_pp)) if r.delta_pp is not none else "baseline" }} | {{ r.passed }} / {{ r.failed }} / {{ r.needs_review }} | {{ "%.1f"|format(r.p50_latency_ms) }} | {{ "%.1f"|format(r.p95_latency_ms) }} | `{{ r.config_hash[:8] }}` |
 {% endfor %}
 {% else %}
-_Sem execuções registradas. Execute `genieops benchmark {{ space.name }} --env dev --mode offline`._
+_Sem execuções registradas. Execute `genieops benchmark {{ space.name }} --env dev --mode offline --label "Rodada 0 - Baseline"`._
 {% endif %}
 
 ---

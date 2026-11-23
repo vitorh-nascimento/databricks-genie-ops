@@ -49,12 +49,17 @@ export function fetchDiagnose(name: string, runId?: string): Promise<DiagnoseRes
 
 export function triggerOfflineBenchmark(
   name: string,
-  env = 'dev'
+  env = 'dev',
+  options?: { label?: string; expand_paraphrases?: boolean }
 ): Promise<{ run: BenchmarkRunRecord; regression_diff: RegressionDiff | null }> {
   return getJson(`/api/spaces/${encodeURIComponent(name)}/benchmark/offline`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ env }),
+    body: JSON.stringify({
+      env,
+      label: options?.label ?? '',
+      expand_paraphrases: options?.expand_paraphrases ?? false,
+    }),
   });
 }
 

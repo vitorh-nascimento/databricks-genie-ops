@@ -12,7 +12,8 @@ description: "Padrões técnicos oficiais de Databricks Genie Agents (serialized
 - `data_sources.volumes[]`: caminhos iniciando com `/Volumes/<catalog>/<schema>/<volume>`, máximo 10 volumes.
 - `instructions.text_instructions[]`: máximo 1 item compilado; strings individuais <= 25.000 chars.
 - `instructions.join_specs[]` e `instructions.sql_snippets.{measures,filters,expressions}[]`: **todas as colunas devem ser qualificadas com tabela ou alias** para evitar `Table name or alias is required for column`.
-- `benchmarks.questions[]`: **sempre no nível raiz** (nunca dentro de `instructions`). Casos `agent` sem SQL canônico usam `answer: [{"format": "SQL", "content": []}]` + `evaluation_note`.
+- `instructions.sql_functions[]`: Trusted Assets registrados no Unity Catalog no formato `{"id": "<32-hex>", "identifier": "catalog.schema.funcao"}`, ordenado por `(id, identifier)` com ID único no espaço de instruções.
+- `benchmarks.questions[]`: **sempre no nível raiz** (nunca dentro de `instructions`). Casos `agent` sem SQL canônico usam `answer: [{"format": "SQL", "content": []}]` + `evaluation_note`. Paráfrases (`paraphrases`) podem ser expandidas sob demanda (`--expand-paraphrases`) com IDs determinísticos próprios.
 - Tamanho total do JSON compilado <= 3.5 MB.
 
 ## Metric Views

@@ -47,7 +47,21 @@ def test_web_api_full_workflow(tmp_path: Path):
 
     r_run_det = client.get(f"/api/spaces/exemplo_vendas/runs/{run_id}")
     assert r_run_det.status_code == 200
-    assert len(r_run_det.json()["run"]["items"]) == 22
+    assert len(r_run_det.json()["run"]["items"]) == 32
+
+    # 3b. Offline Benchmark com label + expand_paraphrases e UC Comments preview
+    r_bmk_para = client.post(
+        "/api/spaces/exemplo_vendas/benchmark/offline",
+        json={"env": "dev", "label": "Rodada 4 - Completa", "expand_paraphrases": True},
+    )
+    assert r_bmk_para.status_code == 200
+    assert r_bmk_para.json()["run"]["label"] == "Rodada 4 - Completa"
+    assert r_bmk_para.json()["run"]["total"] == 96
+
+    r_comments = client.get("/api/spaces/exemplo_vendas/uc-comments/preview")
+    assert r_comments.status_code == 200
+    assert "COMMENT ON TABLE" in r_comments.json()["sql"]
+    assert "ALTER COLUMN" in r_comments.json()["sql"]
 
     r_diag = client.get("/api/spaces/exemplo_vendas/diagnose")
     assert r_diag.status_code == 200

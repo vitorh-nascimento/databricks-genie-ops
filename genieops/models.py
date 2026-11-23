@@ -207,6 +207,16 @@ class SqlSnippetsConfig(BaseModel):
     expressions: list[SqlSnippetExpression] = Field(default_factory=list)
 
 
+class SqlFunction(BaseModel):
+    """Função SQL registrada no Unity Catalog (Trusted Asset) referenciada pelo Genie."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    id: str | None = None
+    identifier: str
+    description: str | None = None
+
+
 class ExampleQuestionSql(BaseModel):
     """Exemplo instrutivo pergunta -> SQL."""
 
@@ -234,6 +244,7 @@ class InstructionsConfig(BaseModel):
 
     join_specs: list[JoinSpec] = Field(default_factory=list)
     sql_snippets: SqlSnippetsConfig = Field(default_factory=SqlSnippetsConfig)
+    sql_functions: list[SqlFunction] = Field(default_factory=list)
     example_question_sqls: list[ExampleQuestionSql] = Field(default_factory=list)
     text_instructions: list[str] = Field(default_factory=list)
     text_instruction_id: str | None = None
@@ -243,6 +254,21 @@ class InstructionsConfig(BaseModel):
     @classmethod
     def _norm_text_instructions(cls, v: Any) -> list[str]:
         return _ensure_str_list(v)
+
+    @field_validator("sql_functions", mode="before")
+    @classmethod
+    def _norm_sql_functions(cls, v: Any) -> list[dict[str, Any]]:
+        if not v:
+            return []
+        normalized: list[dict[str, Any]] = []
+        for item in v:
+            if isinstance(item, str):
+                normalized.append({"identifier": item.strip()})
+            elif isinstance(item, dict):
+                normalized.append(item)
+            elif isinstance(item, SqlFunction):
+                normalized.append(item.model_dump())
+        return normalized
 
     @field_validator("sample_questions", mode="before")
     @classmethod
@@ -271,6 +297,7 @@ class BenchmarkCase(BaseModel):
 
     id: str | None = None
     question: str
+    paraphrases: list[str] = Field(default_factory=list)
     ground_truth_sql: str | None = None
     expected_tables: list[str] = Field(default_factory=list)
     required_clauses: list[str] = Field(default_factory=list)
@@ -281,7 +308,14 @@ class BenchmarkCase(BaseModel):
     mode: EvalMode = "chat"
     evaluation_note: str | None = None
 
-    @field_validator("expected_tables", "required_clauses", "semantic_criteria", "tags", mode="before")
+    @field_validator(
+        "paraphrases",
+        "expected_tables",
+        "required_clauses",
+        "semantic_criteria",
+        "tags",
+        mode="before",
+    )
     @classmethod
     def _norm_lists(cls, v: Any) -> list[str]:
         return _ensure_str_list(v)

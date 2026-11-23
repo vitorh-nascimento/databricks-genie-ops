@@ -161,10 +161,34 @@
 
       <div class="card">
         <div class="card-label">Superfícies Curadas</div>
-        <div class="card-value">{{ (sources.tables | length) + (sources.metric_views | length) + (sources.volumes | length) }}</div>
-        <div class="card-meta">{{ sources.tables | length }} tabelas • {{ sources.metric_views | length }} Metric Views • {{ sources.volumes | length }} Volumes</div>
+        <div class="card-value">{{ (sources.tables | length) + (sources.metric_views | length) + (sources.volumes | length) + (instructions.sql_functions | length) }}</div>
+        <div class="card-meta">{{ sources.tables | length }} tabelas • {{ sources.metric_views | length }} Metric Views • {{ sources.volumes | length }} Volumes • {{ instructions.sql_functions | length }} UDFs</div>
       </div>
     </div>
+
+    {% if evolution_rows %}
+    <section>
+      <h2>Evolução da Acurácia por Rodada de Curadoria</h2>
+      <table>
+        <thead>
+          <tr><th>Rodada / Etapa</th><th>Run ID</th><th>Env / Modo</th><th>Assertividade</th><th>Delta (pp)</th><th>PASS / FAIL / REV</th><th>P50 / P95</th></tr>
+        </thead>
+        <tbody>
+          {% for r in evolution_rows %}
+          <tr>
+            <td><strong>{{ r.label }}</strong></td>
+            <td><code>{{ r.run_id }}</code></td>
+            <td><code>{{ r.env }}</code> / <code>{{ r.mode }}</code></td>
+            <td><strong>{{ "%.1f"|format(r.accuracy_pct) }}%</strong></td>
+            <td>{{ ("%+.2f pp"|format(r.delta_pp)) if r.delta_pp is not none else "baseline" }}</td>
+            <td>{{ r.passed }} / {{ r.failed }} / {{ r.needs_review }}</td>
+            <td>{{ "%.0f"|format(r.p50_latency_ms) }}ms / {{ "%.0f"|format(r.p95_latency_ms) }}ms</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+    {% endif %}
 
     {% if regression %}
     <section>

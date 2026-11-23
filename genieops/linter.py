@@ -310,6 +310,30 @@ def lint_space(
                     "Prefixe toda coluna com o nome/alias da tabela para evitar 'Table name or alias is required for column'.",
                 )
 
+    # 4b. Validação de SQL Functions (Trusted Assets no Unity Catalog)
+    seen_sql_fns: set[str] = set()
+    for fn in bundle.instructions.sql_functions:
+        ident = fn.identifier.strip()
+        parts = [p for p in ident.split(".") if p.strip()]
+        if len(parts) != 3:
+            add(
+                "SQLF001",
+                "ERROR",
+                f"instructions.sql_functions[{ident}]",
+                f"Identificador de SQL Function inválido: '{ident}'. Use o formato completo 'catalog.schema.funcao'.",
+                "Registre a função no Unity Catalog e informe o nome totalmente qualificado de 3 partes.",
+            )
+        norm_fn = ident.lower()
+        if norm_fn in seen_sql_fns:
+            add(
+                "SQLF001",
+                "WARNING",
+                f"instructions.sql_functions[{ident}]",
+                f"SQL Function duplicada em instructions.sql_functions: '{ident}'.",
+                "Remova entradas duplicadas de Trusted Assets.",
+            )
+        seen_sql_fns.add(norm_fn)
+
     # 5. Regras de Metric View em example_question_sqls
     mv_short_names = [mv.identifier.split(".")[-1].lower() for mv in bundle.sources.metric_views]
     for ex in bundle.instructions.example_question_sqls:
@@ -332,10 +356,13 @@ def lint_space(
                     "Medidas de Metric View só podem ser filtradas via HAVING ou CTE/subquery externa.",
                 )
 
-    # 6. Detecção de Benchmark Leakage (example_question_sqls copiando benchmarks.yaml)
-    bmk_norm_questions = [
-        (b.id or b.question[:30], _normalize_text(b.question)) for b in bundle.benchmarks.questions
-    ]
+    # 6. Detecção de Benchmark Leakage (example_question_sqls copiando benchmarks.yaml ou suas paráfrases)
+    bmk_norm_questions: list[tuple[str, str]] = []
+    for b in bundle.benchmarks.questions:
+        ref = b.id or b.question[:30]
+        bmk_norm_questions.append((ref, _normalize_text(b.question)))
+        for p_idx, para in enumerate(b.paraphrases, start=1):
+            bmk_norm_questions.append((f"{ref}#p{p_idx}", _normalize_text(para)))
     bmk_norm_sqls = [
         (b.id or b.question[:30], _normalize_sql_for_comparison(b.ground_truth_sql))
         for b in bundle.benchmarks.questions
@@ -418,6 +445,17 @@ def lint_space(
                 "Remova duplicatas triviais para não distorcer a taxa de assertividade.",
             )
         seen_bmk_questions.add(q_norm)
+        for p_idx, para in enumerate(bmk.paraphrases, start=1):
+            p_norm = _normalize_text(para)
+            if p_norm in seen_bmk_questions:
+                add(
+                    "BMK001",
+                    "WARNING",
+                    f"benchmarks.questions[{bmk.id or idx}].paraphrases[{p_idx}]",
+                    f"Paráfrase duplicada na suíte de benchmark: '{para[:60]}'.",
+                    "Use formulações realmente distintas para testar robustez linguística.",
+                )
+            seen_bmk_questions.add(p_norm)
 
         if bmk.mode == "chat" and not (bmk.ground_truth_sql and bmk.ground_truth_sql.strip()):
             add(
@@ -497,6 +535,19 @@ def lint_space(
     ]
     if len(q_ids) != len(set(q_ids)) or any(not HEX_32_RE.match(i) for i in q_ids):
         add("LIM001", "ERROR", "serialized_space", "IDs de perguntas inválidos ou duplicados.", "")
+
+    inst_compiled = compiled.get("instructions", {})
+    inst_ids = (
+        [x["id"] for x in inst_compiled.get("text_instructions", [])]
+        + [x["id"] for x in inst_compiled.get("example_question_sqls", [])]
+        + [x["id"] for x in inst_compiled.get("join_specs", [])]
+        + [x["id"] for x in inst_compiled.get("sql_functions", [])]
+        + [x["id"] for x in inst_compiled.get("sql_snippets", {}).get("measures", [])]
+        + [x["id"] for x in inst_compiled.get("sql_snippets", {}).get("filters", [])]
+        + [x["id"] for x in inst_compiled.get("sql_snippets", {}).get("expressions", [])]
+    )
+    if len(inst_ids) != len(set(inst_ids)) or any(not HEX_32_RE.match(i) for i in inst_ids):
+        add("LIM001", "ERROR", "serialized_space", "IDs de instruções inválidos ou duplicados.", "")
 
     # 10. Validação SQL real opcional (EXPLAIN read-only no SQL Warehouse)
     if validate_sql:

@@ -18,6 +18,7 @@ from genieops import __version__
 from genieops.agent_mode import AgentModeClient, ExecutionMode, simulate_agent_stream
 from genieops.benchmark import run_benchmark
 from genieops.compiler import compile_space, payload_hash
+from genieops.curation_kit import generate_uc_comments_sql
 from genieops.diagnoser import FIX_LEVER_HIERARCHY, diagnose_run
 from genieops.history import HistoryStore
 from genieops.judges import JudgeProviderName, create_judge
@@ -40,6 +41,8 @@ class OfflineBenchmarkRequest(BaseModel):
     env: str = "dev"
     ids: list[str] | None = None
     only_failed: bool = False
+    label: str = ""
+    expand_paraphrases: bool = False
 
 
 def create_app(
@@ -114,8 +117,10 @@ def create_app(
                         "metric_views": len(bundle.sources.metric_views),
                         "volumes": len(bundle.sources.volumes),
                         "join_specs": len(bundle.instructions.join_specs),
+                        "sql_functions": len(bundle.instructions.sql_functions),
                         "examples": len(bundle.instructions.example_question_sqls),
                         "benchmarks": len(bundle.benchmarks.questions),
+                        "paraphrases": sum(len(b.paraphrases) for b in bundle.benchmarks.questions),
                     },
                     "health": {
                         "score": lint_rep.health_score,
@@ -232,10 +237,25 @@ def create_app(
             history=hist,
             ids=req.ids,
             only_failed=req.only_failed,
+            label=req.label,
+            expand_paraphrases=req.expand_paraphrases,
         )
         return {
             "run": asdict(record),
             "regression_diff": asdict(diff) if diff is not None else None,
+        }
+
+    @app.get("/api/spaces/{name}/uc-comments/preview")
+    def api_uc_comments_preview(
+        name: str,
+        include_metric_views: bool = Query(default=True),
+    ) -> dict[str, Any]:
+        bundle = _get_bundle(name)
+        sql_text = generate_uc_comments_sql(bundle, include_metric_views=include_metric_views)
+        return {
+            "space_name": name,
+            "include_metric_views": include_metric_views,
+            "sql": sql_text,
         }
 
     @app.get("/api/spaces/{name}/export-delta/preview")

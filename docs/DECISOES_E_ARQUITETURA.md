@@ -108,3 +108,15 @@ O **Databricks GenieOps** resolve essas 6 dores tratando Genie Agents como códi
 - **Decisão:** Versionar as regras arquiteturais, invariantes Databricks Genie e portão de qualidade em `GEMINI.md` e `.agents/rules/*.md`.
 - **Por quê:**
   - Garante que qualquer futura sessão assistida por agentes de IA respeite automaticamente as mesmas regras de segurança, schema v2, testes offline e commits semânticos sem precisar reexplicar o contexto do projeto.
+
+### ADR-011 — Trusted Assets (`sql_functions`), Robustez via Paráfrases, Rodadas Rotuladas e Kit Star Schema/UC COMMENTs
+
+- **Decisão:**
+  - Suportar `instructions.sql_functions` (Unity Catalog SQL UDFs / Trusted Assets) de ponta a ponta no schema YAML, compilador determinístico v2 (IDs UUID5 + ordenação `(id, identifier)`), parser reverso (`pull`), `diff_payloads`, `migrator.py`, `linter.py` (`SQLF001`), documentação e Painel Web.
+  - Suportar `paraphrases` em cada `BenchmarkCase` (`benchmarks.yaml`) com expansão opcional (`--expand-paraphrases`) na compilação e execução de benchmarks, além de incluir paráfrases na guarda contra Benchmark Leakage (`LEAK001`).
+  - Persistir rótulos de rodada (`label`) no SQLite (`benchmark_runs.label` com migração automática retrocompatível), na exportação Delta (`genie_opt_runs.notes` / `genie_opt_events.payload_json`) e na **Tabela de Evolução da Acurácia por Rodada** dos relatórios MD/HTML (`docs_generator.py`).
+  - Disponibilizar em `curation_kit.py` os geradores offline revisáveis `genieops uc-comments` (`COMMENT ON TABLE` / `ALTER COLUMN COMMENT`) e `genieops seed-star-schema` (base fictícia em esquema estrela com 6 armadilhas reais de negócio + DDL de Trusted Assets + playbook de rodadas 0→4), preservando estritamente a política de zero mutação não autorizada no Unity Catalog.
+- **Por quê:**
+  - **Trusted Assets (`sql_functions`):** resolvem métricas não-aditivas, rankings parametrizados e cálculos metodológicos governados onde Metric Views ou snippets simples não bastam.
+  - **Paráfrases (2–4 variações por pergunta):** medem generalização linguística real em vez de memorização de uma única formulação.
+  - **Rodadas rotuladas + Kit Star Schema/COMMENTs:** permitem executar e documentar cientificamente a curadoria progressiva (Rodada 0 só tabelas → +UC COMMENTs → +Text Instructions → +SQLs de exemplo → +SQL Functions), registrando cada degrau de acurácia em Delta e nos relatórios executivos.

@@ -44,6 +44,7 @@ class BenchmarkRunRecord:
     p50_latency_ms: float
     p95_latency_ms: float
     config_hash: str
+    label: str = ""
     items: list[BenchmarkItemResult] = field(default_factory=list)
 
 
@@ -110,7 +111,8 @@ class HistoryStore:
                     avg_latency_ms REAL NOT NULL,
                     p50_latency_ms REAL NOT NULL,
                     p95_latency_ms REAL NOT NULL,
-                    config_hash TEXT NOT NULL
+                    config_hash TEXT NOT NULL,
+                    label TEXT NOT NULL DEFAULT ''
                 );
 
                 CREATE TABLE IF NOT EXISTS benchmark_results (
@@ -138,6 +140,13 @@ class HistoryStore:
                     ON benchmark_results(run_id);
                 """
             )
+            # Migração retrocompatível para bancos history.db existentes sem coluna label
+            cols = {
+                row["name"]
+                for row in conn.execute("PRAGMA table_info(benchmark_runs)").fetchall()
+            }
+            if "label" not in cols:
+                conn.execute("ALTER TABLE benchmark_runs ADD COLUMN label TEXT NOT NULL DEFAULT ''")
 
     def save_run(self, record: BenchmarkRunRecord) -> None:
         with self._connect() as conn:
@@ -146,8 +155,9 @@ class HistoryStore:
                 INSERT INTO benchmark_runs (
                     run_id, space_name, env, mode, created_at,
                     total, passed, failed, needs_review, excluded,
-                    accuracy_pct, avg_latency_ms, p50_latency_ms, p95_latency_ms, config_hash
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    accuracy_pct, avg_latency_ms, p50_latency_ms, p95_latency_ms,
+                    config_hash, label
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     record.run_id,
@@ -165,6 +175,7 @@ class HistoryStore:
                     record.p50_latency_ms,
                     record.p95_latency_ms,
                     record.config_hash,
+                    record.label,
                 ),
             )
             for item in record.items:
@@ -277,6 +288,7 @@ class HistoryStore:
 
     @staticmethod
     def _row_to_run(row: sqlite3.Row, items: list[BenchmarkItemResult]) -> BenchmarkRunRecord:
+        keys = row.keys()
         return BenchmarkRunRecord(
             run_id=row["run_id"],
             space_name=row["space_name"],
@@ -293,6 +305,7 @@ class HistoryStore:
             p50_latency_ms=row["p50_latency_ms"],
             p95_latency_ms=row["p95_latency_ms"],
             config_hash=row["config_hash"],
+            label=row["label"] if "label" in keys else "",
             items=items,
         )
 

@@ -64,7 +64,33 @@ def _known_source_names(bundle: SpaceBundle) -> set[str]:
     for src in bundle.sources.tables + bundle.sources.metric_views:
         names.add(src.identifier.lower())
         names.add(src.identifier.split(".")[-1].lower())
+    for fn in bundle.instructions.sql_functions:
+        names.add(fn.identifier.lower())
+        names.add(fn.identifier.split(".")[-1].lower())
     return names
+
+
+def _expand_cases_with_paraphrases(cases: list[BenchmarkCase]) -> list[BenchmarkCase]:
+    """Expande cada BenchmarkCase com suas paráfrases como casos independentes compartilhando o gabarito."""
+    expanded: list[BenchmarkCase] = []
+    for idx, case in enumerate(cases):
+        base_id = case.id or f"case_{idx + 1:02d}"
+        expanded.append(case)
+        for p_idx, para in enumerate(case.paraphrases, start=1):
+            para_clean = para.strip()
+            if not para_clean:
+                continue
+            expanded.append(
+                case.model_copy(
+                    update={
+                        "id": f"{base_id}__p{p_idx}",
+                        "question": para_clean,
+                        "paraphrases": [],
+                        "tags": list(dict.fromkeys([*case.tags, "paraphrase", f"base:{base_id}"])),
+                    }
+                )
+            )
+    return expanded
 
 
 def _select_cases(
@@ -72,11 +98,19 @@ def _select_cases(
     ids: list[str] | None = None,
     only_failed: bool = False,
     history: HistoryStore | None = None,
+    expand_paraphrases: bool = False,
 ) -> list[BenchmarkCase]:
     cases = list(bundle.benchmarks.questions)
+    if expand_paraphrases:
+        cases = _expand_cases_with_paraphrases(cases)
     if ids:
         wanted = {i.strip() for i in ids if i.strip()}
-        cases = [c for idx, c in enumerate(cases) if (c.id or f"case_{idx + 1}") in wanted]
+        cases = [
+            c
+            for idx, c in enumerate(cases)
+            if (c.id or f"case_{idx + 1}") in wanted
+            or (c.id and c.id.split("__p")[0] in wanted)
+        ]
     if only_failed and history is not None:
         latest = history.get_latest_run(bundle.space.name)
         if latest:
@@ -105,6 +139,7 @@ def _finalize_run(
     mode: BenchmarkMode,
     items: list[BenchmarkItemResult],
     history: HistoryStore | None,
+    label: str = "",
 ) -> tuple[BenchmarkRunRecord, RegressionDiff | None]:
     compiled = compile_space(bundle)
     cfg_hash = payload_hash(compiled)
@@ -137,6 +172,7 @@ def _finalize_run(
         p50_latency_ms=p50_lat,
         p95_latency_ms=p95_lat,
         config_hash=cfg_hash,
+        label=label.strip(),
         items=items,
     )
 
@@ -167,14 +203,22 @@ def run_benchmark(
     agent_client: AgentModeClient | None = None,
     execution_mode: ExecutionMode = "STANDARD",
     on_agent_event: Callable[[AgentStreamEvent], None] | None = None,
+    label: str = "",
+    expand_paraphrases: bool = False,
 ) -> tuple[BenchmarkRunRecord, RegressionDiff | None]:
     """Executa a suíte de benchmark no modo especificado (`offline`, `live`, `eval-run`, `agent`)."""
-    cases = _select_cases(bundle, ids=ids, only_failed=only_failed, history=history)
+    cases = _select_cases(
+        bundle,
+        ids=ids,
+        only_failed=only_failed,
+        history=history,
+        expand_paraphrases=expand_paraphrases,
+    )
     known_sources = _known_source_names(bundle)
 
     if mode == "offline":
         items = _run_offline(cases, known_sources)
-        return _finalize_run(bundle, env_name, mode, items, history)
+        return _finalize_run(bundle, env_name, mode, items, history, label=label)
 
     resolved_judge: JudgeProvider | None = judge_provider
     if resolved_judge is None and llm_judge is not None:
@@ -196,7 +240,7 @@ def run_benchmark(
             judge=resolved_judge or HeuristicRubricJudge(),
             on_event=on_agent_event,
         )
-        return _finalize_run(bundle, env_name, mode, items, history)
+        return _finalize_run(bundle, env_name, mode, items, history, label=label)
 
     if client is None or not space_id:
         raise ValueError(
@@ -214,7 +258,7 @@ def run_benchmark(
             llm_judge=llm_judge,
             judge_provider=resolved_judge,
         )
-        return _finalize_run(bundle, env_name, mode, items, history)
+        return _finalize_run(bundle, env_name, mode, items, history, label=label)
 
     if mode == "eval-run":
         items = _run_native_eval(
@@ -222,8 +266,9 @@ def run_benchmark(
             cases=cases,
             client=client,
             space_id=space_id,
+            expand_paraphrases=expand_paraphrases,
         )
-        return _finalize_run(bundle, env_name, mode, items, history)
+        return _finalize_run(bundle, env_name, mode, items, history, label=label)
 
     raise ValueError(f"Modo de benchmark desconhecido: {mode}")
 
@@ -436,15 +481,17 @@ def _run_native_eval(
     cases: list[BenchmarkCase],
     client: DatabricksClient,
     space_id: str,
+    expand_paraphrases: bool = False,
 ) -> list[BenchmarkItemResult]:
     """Wrapper para a API nativa `genie-create-eval-run` com suporte a staged gates."""
-    compiled = compile_space(bundle)
+    compiled = compile_space(bundle, expand_paraphrases=expand_paraphrases)
     question_to_hex = {
         q["question"][0]: q["id"] for q in compiled.get("benchmarks", {}).get("questions", [])
     }
 
     selected_hex_ids: list[str] | None = None
-    if len(cases) < len(bundle.benchmarks.questions):
+    total_compiled = len(compiled.get("benchmarks", {}).get("questions", []))
+    if len(cases) < total_compiled:
         selected_hex_ids = [
             question_to_hex[c.question.strip()]
             for c in cases

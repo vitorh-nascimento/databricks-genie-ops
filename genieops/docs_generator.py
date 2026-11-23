@@ -71,16 +71,43 @@ def generate_docs(
     latest_run: BenchmarkRunRecord | None = None
     recent_runs: list[BenchmarkRunRecord] = []
     regression: RegressionDiff | None = None
+    evolution_rows: list[dict[str, Any]] = []
 
     if history is not None:
-        recent_runs = history.list_runs(bundle.space.name, limit=10)
+        recent_runs = history.list_runs(bundle.space.name, limit=20)
         latest_run = history.get_latest_run(bundle.space.name)
         if latest_run is not None:
             prev = history.get_previous_run(bundle.space.name, latest_run.run_id)
             if prev is not None:
                 regression = history.compare_runs(prev, latest_run)
 
+        chronological = list(reversed(recent_runs))
+        prev_acc: float | None = None
+        for idx, run in enumerate(chronological):
+            delta = round(run.accuracy_pct - prev_acc, 2) if prev_acc is not None else None
+            evolution_rows.append(
+                {
+                    "round_index": idx,
+                    "label": run.label or f"Rodada {idx}",
+                    "run_id": run.run_id,
+                    "created_at": run.created_at,
+                    "env": run.env,
+                    "mode": run.mode,
+                    "accuracy_pct": run.accuracy_pct,
+                    "delta_pp": delta,
+                    "passed": run.passed,
+                    "failed": run.failed,
+                    "needs_review": run.needs_review,
+                    "total": run.total,
+                    "p50_latency_ms": run.p50_latency_ms,
+                    "p95_latency_ms": run.p95_latency_ms,
+                    "config_hash": run.config_hash,
+                }
+            )
+            prev_acc = run.accuracy_pct
+
     readiness_label, readiness_class = _production_readiness_status(l_report, latest_run)
+    total_paraphrases = sum(len(b.paraphrases) for b in bundle.benchmarks.questions)
 
     # Agrupa termos/sinônimos amigáveis para o Guia do Usuário
     glossary: list[dict[str, str]] = []
@@ -109,6 +136,8 @@ def generate_docs(
         "lint": l_report,
         "latest_run": latest_run,
         "recent_runs": recent_runs,
+        "evolution_rows": evolution_rows,
+        "total_paraphrases": total_paraphrases,
         "regression": regression,
         "readiness_label": readiness_label,
         "readiness_class": readiness_class,

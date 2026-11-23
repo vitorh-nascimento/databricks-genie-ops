@@ -3,8 +3,10 @@ export interface SpaceCounts {
   metric_views: number;
   volumes: number;
   join_specs: number;
+  sql_functions: number;
   examples: number;
   benchmarks: number;
+  paraphrases: number;
 }
 
 export interface HealthSummary {
@@ -47,6 +49,7 @@ export interface BenchmarkRunRecord {
   p50_latency_ms: number;
   p95_latency_ms: number;
   config_hash: string;
+  label?: string;
   items: BenchmarkItemResult[];
 }
 
@@ -141,6 +144,7 @@ export interface SpaceDetailResponse {
   };
   instructions: {
     join_specs: { left: { identifier: string }; right: { identifier: string }; condition: string; relationship_type: string }[];
+    sql_functions: { identifier: string; description?: string | null }[];
     text_instructions: string[];
     sample_questions: { question: string }[];
   };

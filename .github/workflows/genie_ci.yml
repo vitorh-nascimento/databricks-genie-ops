@@ -34,7 +34,7 @@ jobs:
             space_name=$(basename "$space_dir")
             echo "=== Validando space: $space_name ==="
             genieops lint "$space_name" --strict
-            genieops benchmark "$space_name" --env dev --mode offline
+            genieops benchmark "$space_name" --env dev --mode offline --expand-paraphrases --label "CI Offline"
             genieops docs "$space_name"
           done
 

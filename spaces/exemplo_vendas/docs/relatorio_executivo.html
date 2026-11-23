@@ -123,7 +123,7 @@
     <header>
       <div>
         <h1>Comercial & Receita Corporativa AI-BI</h1>
-        <p class="subtitle">Space: <code>exemplo_vendas</code> • Responsável: Data & Analytics — Squad Comercial • Gerado em 2026-11-20 17:55 UTC</p>
+        <p class="subtitle">Space: <code>exemplo_vendas</code> • Responsável: Data & Analytics — Squad Comercial • Gerado em 2026-11-23 11:14 UTC</p>
       </div>
       <span class="badge success">APROVADO PARA PRODUÇÃO</span>
     </header>
@@ -131,15 +131,15 @@
     <div class="grid">
       <div class="card">
         <div class="card-label">Genie Health Score</div>
-        <div class="card-value">99/100</div>
-        <div class="card-meta">Erros: 0 • Avisos: 0 • Infos: 1</div>
-        <div class="bar-bg"><div class="bar-fill" style="width: 99%;"></div></div>
+        <div class="card-value">100/100</div>
+        <div class="card-meta">Erros: 0 • Avisos: 0 • Infos: 0</div>
+        <div class="bar-bg"><div class="bar-fill" style="width: 100%;"></div></div>
       </div>
 
       <div class="card">
         <div class="card-label">Assertividade (Benchmark)</div>
         <div class="card-value">100.0%</div>
-        <div class="card-meta">22/22 aprovados (offline / dev)</div>
+        <div class="card-meta">96/96 aprovados (offline / dev)</div>
         <div class="bar-bg"><div class="bar-fill" style="width: 100.0%;"></div></div>
       </div>
 
@@ -151,31 +151,67 @@
 
       <div class="card">
         <div class="card-label">Superfícies Curadas</div>
-        <div class="card-value">4</div>
-        <div class="card-meta">2 tabelas • 1 Metric Views • 1 Volumes</div>
+        <div class="card-value">7</div>
+        <div class="card-meta">2 tabelas • 1 Metric Views • 1 Volumes • 3 UDFs</div>
       </div>
     </div>
 
-
     <section>
-      <h2>Genie Health Check (Linter)</h2>
+      <h2>Evolução da Acurácia por Rodada de Curadoria</h2>
       <table>
         <thead>
-          <tr><th>Severidade</th><th>Código</th><th>Superfície</th><th>Achado &amp; Recomendação</th></tr>
+          <tr><th>Rodada / Etapa</th><th>Run ID</th><th>Env / Modo</th><th>Assertividade</th><th>Delta (pp)</th><th>PASS / FAIL / REV</th><th>P50 / P95</th></tr>
         </thead>
         <tbody>
           <tr>
-            <td><span class="pill pill-INFO">INFO</span></td>
-            <td><code>BMK001</code></td>
-            <td><code>benchmarks.yaml</code></td>
-            <td>Suíte de benchmark com 22 itens válidos (recomendação oficial Databricks para produção: >= 30).<br /><small style="color:#94a3b8;">→ Considere adicionar mais cenários médios/difíceis a partir de perguntas reais de negócio.</small></td>
+            <td><strong>Rodada 0</strong></td>
+            <td><code>run_92ff3b390f</code></td>
+            <td><code>dev</code> / <code>offline</code></td>
+            <td><strong>100.0%</strong></td>
+            <td>baseline</td>
+            <td>22 / 0 / 0</td>
+            <td>0ms / 0ms</td>
+          </tr>
+          <tr>
+            <td><strong>Rodada 1</strong></td>
+            <td><code>run_9027101977</code></td>
+            <td><code>dev</code> / <code>offline</code></td>
+            <td><strong>100.0%</strong></td>
+            <td>+0.00 pp</td>
+            <td>22 / 0 / 0</td>
+            <td>0ms / 0ms</td>
+          </tr>
+          <tr>
+            <td><strong>Rodada 4 - Curadoria Completa</strong></td>
+            <td><code>run_aabd699984</code></td>
+            <td><code>dev</code> / <code>offline</code></td>
+            <td><strong>100.0%</strong></td>
+            <td>+0.00 pp</td>
+            <td>96 / 0 / 0</td>
+            <td>0ms / 0ms</td>
           </tr>
         </tbody>
       </table>
     </section>
 
     <section>
-      <h2>Matriz de Benchmark (22 casos)</h2>
+      <h2>Comparação de Regressão (run_9027101977 → run_aabd699984)</h2>
+      <div class="card">
+        Score: <strong>100.0%</strong> → <strong>100.0%</strong>
+        (+0.00 pp) •
+        Fixed: <strong>0</strong> •
+        Regressed: <strong>0</strong> •
+        Unchanged: <strong>22</strong>
+      </div>
+    </section>
+
+    <section>
+      <h2>Genie Health Check (Linter)</h2>
+      <div class="card">Nenhum problema encontrado. Curadoria 100% aderente às boas práticas Databricks Genie.</div>
+    </section>
+
+    <section>
+      <h2>Matriz de Benchmark (96 casos)</h2>
       <table>
         <thead>
           <tr><th>ID</th><th>Domínio</th><th>Dif.</th><th>Pergunta &amp; SQL</th><th>Status</th><th>Latência</th></tr>
@@ -187,6 +223,36 @@
               <td>easy</td>
               <td>
                 Qual foi a receita líquida total de pedidos faturados em janeiro de 2026?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT SUM(valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-01' AND status_pedido = 'Faturado'</pre><pre>-- Gerado
+SELECT SUM(valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-01' AND status_pedido = 'Faturado'</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_01__p1</code></td>
+              <td>Faturamento</td>
+              <td>easy</td>
+              <td>
+                Quanto faturamos líquido em 2026-01 considerando apenas pedidos confirmados?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT SUM(valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-01' AND status_pedido = 'Faturado'</pre><pre>-- Gerado
+SELECT SUM(valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-01' AND status_pedido = 'Faturado'</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_01__p2</code></td>
+              <td>Faturamento</td>
+              <td>easy</td>
+              <td>
+                Qual o total de receita líquida realizada em janeiro de 2026?
                 <details>
                   <summary>Ver SQL esperado vs gerado</summary>
 <pre>-- Esperado
@@ -212,11 +278,71 @@ SELECT SUM(valor_desconto) AS total_desconto FROM analytics_dev.sales_gold.fct_p
               <td>0.0ms</td>
             </tr>
             <tr>
+              <td><code>bmk_02__p1</code></td>
+              <td>Descontos</td>
+              <td>easy</td>
+              <td>
+                Quanto demos de desconto em pedidos faturados na competência 2026-02?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT SUM(valor_desconto) AS total_desconto FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-02' AND status_pedido = 'Faturado'</pre><pre>-- Gerado
+SELECT SUM(valor_desconto) AS total_desconto FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-02' AND status_pedido = 'Faturado'</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_02__p2</code></td>
+              <td>Descontos</td>
+              <td>easy</td>
+              <td>
+                Qual foi o montante total de abatimentos em fevereiro de 2026?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT SUM(valor_desconto) AS total_desconto FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-02' AND status_pedido = 'Faturado'</pre><pre>-- Gerado
+SELECT SUM(valor_desconto) AS total_desconto FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-02' AND status_pedido = 'Faturado'</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
               <td><code>bmk_03</code></td>
               <td>Geografia</td>
               <td>easy</td>
               <td>
                 Qual a receita líquida faturada por região em março de 2026?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT regiao, SUM(valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-03' AND status_pedido = 'Faturado' GROUP BY regiao ORDER BY receita_liquida DESC</pre><pre>-- Gerado
+SELECT regiao, SUM(valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-03' AND status_pedido = 'Faturado' GROUP BY regiao ORDER BY receita_liquida DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_03__p1</code></td>
+              <td>Geografia</td>
+              <td>easy</td>
+              <td>
+                Mostre o faturamento líquido quebrado por macrorregião em 2026-03.
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT regiao, SUM(valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-03' AND status_pedido = 'Faturado' GROUP BY regiao ORDER BY receita_liquida DESC</pre><pre>-- Gerado
+SELECT regiao, SUM(valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-03' AND status_pedido = 'Faturado' GROUP BY regiao ORDER BY receita_liquida DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_03__p2</code></td>
+              <td>Geografia</td>
+              <td>easy</td>
+              <td>
+                Quanto cada praça comercial faturou líquido em março de 2026?
                 <details>
                   <summary>Ver SQL esperado vs gerado</summary>
 <pre>-- Esperado
@@ -242,11 +368,71 @@ SELECT canal_venda, COUNT(*) AS pedidos_cancelados FROM analytics_dev.sales_gold
               <td>0.0ms</td>
             </tr>
             <tr>
+              <td><code>bmk_04__p1</code></td>
+              <td>Operações</td>
+              <td>easy</td>
+              <td>
+                Qual o volume de cancelamentos por origem da venda em janeiro de 2026?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT canal_venda, COUNT(*) AS pedidos_cancelados FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-01' AND status_pedido = 'Cancelado' GROUP BY canal_venda ORDER BY pedidos_cancelados DESC</pre><pre>-- Gerado
+SELECT canal_venda, COUNT(*) AS pedidos_cancelados FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-01' AND status_pedido = 'Cancelado' GROUP BY canal_venda ORDER BY pedidos_cancelados DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_04__p2</code></td>
+              <td>Operações</td>
+              <td>easy</td>
+              <td>
+                Liste a quantidade de pedidos com status Cancelado por canal em 2026-01.
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT canal_venda, COUNT(*) AS pedidos_cancelados FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-01' AND status_pedido = 'Cancelado' GROUP BY canal_venda ORDER BY pedidos_cancelados DESC</pre><pre>-- Gerado
+SELECT canal_venda, COUNT(*) AS pedidos_cancelados FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-01' AND status_pedido = 'Cancelado' GROUP BY canal_venda ORDER BY pedidos_cancelados DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
               <td><code>bmk_05</code></td>
               <td>Pagamentos</td>
               <td>easy</td>
               <td>
                 Qual a distribuição da receita líquida por forma de pagamento em 2026-02?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT forma_pagamento, SUM(valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-02' AND status_pedido = 'Faturado' GROUP BY forma_pagamento ORDER BY receita_liquida DESC</pre><pre>-- Gerado
+SELECT forma_pagamento, SUM(valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-02' AND status_pedido = 'Faturado' GROUP BY forma_pagamento ORDER BY receita_liquida DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_05__p1</code></td>
+              <td>Pagamentos</td>
+              <td>easy</td>
+              <td>
+                Como ficou o faturamento líquido por meio de pagamento em fevereiro de 2026?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT forma_pagamento, SUM(valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-02' AND status_pedido = 'Faturado' GROUP BY forma_pagamento ORDER BY receita_liquida DESC</pre><pre>-- Gerado
+SELECT forma_pagamento, SUM(valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-02' AND status_pedido = 'Faturado' GROUP BY forma_pagamento ORDER BY receita_liquida DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_05__p2</code></td>
+              <td>Pagamentos</td>
+              <td>easy</td>
+              <td>
+                Agrupe a receita realizada em 2026-02 por forma de pagamento.
                 <details>
                   <summary>Ver SQL esperado vs gerado</summary>
 <pre>-- Esperado
@@ -272,11 +458,71 @@ SELECT competencia_faturamento, SUM(valor_liquido) AS receita_liquida FROM analy
               <td>0.0ms</td>
             </tr>
             <tr>
+              <td><code>bmk_06__p1</code></td>
+              <td>Faturamento</td>
+              <td>medium</td>
+              <td>
+                Mostre a série histórica mês a mês do faturamento líquido em 2026.
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT competencia_faturamento, SUM(valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos WHERE LEFT(competencia_faturamento, 4) = '2026' AND status_pedido = 'Faturado' GROUP BY competencia_faturamento ORDER BY competencia_faturamento</pre><pre>-- Gerado
+SELECT competencia_faturamento, SUM(valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos WHERE LEFT(competencia_faturamento, 4) = '2026' AND status_pedido = 'Faturado' GROUP BY competencia_faturamento ORDER BY competencia_faturamento</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_06__p2</code></td>
+              <td>Faturamento</td>
+              <td>medium</td>
+              <td>
+                Como a receita confirmada variou por competência durante o ano de 2026?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT competencia_faturamento, SUM(valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos WHERE LEFT(competencia_faturamento, 4) = '2026' AND status_pedido = 'Faturado' GROUP BY competencia_faturamento ORDER BY competencia_faturamento</pre><pre>-- Gerado
+SELECT competencia_faturamento, SUM(valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos WHERE LEFT(competencia_faturamento, 4) = '2026' AND status_pedido = 'Faturado' GROUP BY competencia_faturamento ORDER BY competencia_faturamento</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
               <td><code>bmk_07</code></td>
               <td>Clientes</td>
               <td>medium</td>
               <td>
                 Quais os 5 clientes com maior receita líquida faturada em 2026?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT c.nome_cliente, SUM(p.valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' GROUP BY c.nome_cliente ORDER BY receita_liquida DESC LIMIT 5</pre><pre>-- Gerado
+SELECT c.nome_cliente, SUM(p.valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' GROUP BY c.nome_cliente ORDER BY receita_liquida DESC LIMIT 5</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_07__p1</code></td>
+              <td>Clientes</td>
+              <td>medium</td>
+              <td>
+                Quem são os top 5 clientes por faturamento líquido realizado em 2026?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT c.nome_cliente, SUM(p.valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' GROUP BY c.nome_cliente ORDER BY receita_liquida DESC LIMIT 5</pre><pre>-- Gerado
+SELECT c.nome_cliente, SUM(p.valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' GROUP BY c.nome_cliente ORDER BY receita_liquida DESC LIMIT 5</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_07__p2</code></td>
+              <td>Clientes</td>
+              <td>medium</td>
+              <td>
+                Liste as cinco maiores contas em receita líquida confirmada no ano de 2026.
                 <details>
                   <summary>Ver SQL esperado vs gerado</summary>
 <pre>-- Esperado
@@ -302,11 +548,71 @@ SELECT SUM(p.valor_liquido) AS receita_enterprise_se FROM analytics_dev.sales_go
               <td>0.0ms</td>
             </tr>
             <tr>
+              <td><code>bmk_08__p1</code></td>
+              <td>Clientes</td>
+              <td>medium</td>
+              <td>
+                Quanto faturamos com grandes contas Enterprise no Sudeste em janeiro de 2026?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT SUM(p.valor_liquido) AS receita_enterprise_se FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE c.segmento = 'Enterprise' AND p.regiao = 'Sudeste' AND p.competencia_faturamento = '2026-01' AND p.status_pedido = 'Faturado'</pre><pre>-- Gerado
+SELECT SUM(p.valor_liquido) AS receita_enterprise_se FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE c.segmento = 'Enterprise' AND p.regiao = 'Sudeste' AND p.competencia_faturamento = '2026-01' AND p.status_pedido = 'Faturado'</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_08__p2</code></td>
+              <td>Clientes</td>
+              <td>medium</td>
+              <td>
+                Qual a receita líquida faturada da carteira Enterprise na região Sudeste em 2026-01?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT SUM(p.valor_liquido) AS receita_enterprise_se FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE c.segmento = 'Enterprise' AND p.regiao = 'Sudeste' AND p.competencia_faturamento = '2026-01' AND p.status_pedido = 'Faturado'</pre><pre>-- Gerado
+SELECT SUM(p.valor_liquido) AS receita_enterprise_se FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE c.segmento = 'Enterprise' AND p.regiao = 'Sudeste' AND p.competencia_faturamento = '2026-01' AND p.status_pedido = 'Faturado'</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
               <td><code>bmk_09</code></td>
               <td>Geografia</td>
               <td>medium</td>
               <td>
                 Qual a receita líquida por UF para clientes de porte Grande em 2026?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT c.uf, SUM(p.valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE c.porte_empresa = 'Grande' AND LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' GROUP BY c.uf ORDER BY receita_liquida DESC</pre><pre>-- Gerado
+SELECT c.uf, SUM(p.valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE c.porte_empresa = 'Grande' AND LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' GROUP BY c.uf ORDER BY receita_liquida DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_09__p1</code></td>
+              <td>Geografia</td>
+              <td>medium</td>
+              <td>
+                Mostre o faturamento líquido por estado considerando somente empresas de grande porte em 2026.
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT c.uf, SUM(p.valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE c.porte_empresa = 'Grande' AND LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' GROUP BY c.uf ORDER BY receita_liquida DESC</pre><pre>-- Gerado
+SELECT c.uf, SUM(p.valor_liquido) AS receita_liquida FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE c.porte_empresa = 'Grande' AND LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' GROUP BY c.uf ORDER BY receita_liquida DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_09__p2</code></td>
+              <td>Geografia</td>
+              <td>medium</td>
+              <td>
+                Quanto clientes de porte Grande faturaram em cada UF ao longo de 2026?
                 <details>
                   <summary>Ver SQL esperado vs gerado</summary>
 <pre>-- Esperado
@@ -332,11 +638,71 @@ SELECT regiao, ROUND(SUM(CASE WHEN status_pedido = 'Cancelado' THEN 1 ELSE 0 END
               <td>0.0ms</td>
             </tr>
             <tr>
+              <td><code>bmk_10__p1</code></td>
+              <td>Operações</td>
+              <td>hard</td>
+              <td>
+                Qual o percentual de pedidos cancelados em cada macrorregião em janeiro de 2026?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT regiao, ROUND(SUM(CASE WHEN status_pedido = 'Cancelado' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 2) AS taxa_cancelamento_pct FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-01' GROUP BY regiao ORDER BY taxa_cancelamento_pct DESC</pre><pre>-- Gerado
+SELECT regiao, ROUND(SUM(CASE WHEN status_pedido = 'Cancelado' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 2) AS taxa_cancelamento_pct FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-01' GROUP BY regiao ORDER BY taxa_cancelamento_pct DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_10__p2</code></td>
+              <td>Operações</td>
+              <td>hard</td>
+              <td>
+                Calcule o churn de pedidos por região na competência 2026-01.
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT regiao, ROUND(SUM(CASE WHEN status_pedido = 'Cancelado' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 2) AS taxa_cancelamento_pct FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-01' GROUP BY regiao ORDER BY taxa_cancelamento_pct DESC</pre><pre>-- Gerado
+SELECT regiao, ROUND(SUM(CASE WHEN status_pedido = 'Cancelado' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 2) AS taxa_cancelamento_pct FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-01' GROUP BY regiao ORDER BY taxa_cancelamento_pct DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
               <td><code>bmk_11</code></td>
               <td>Descontos</td>
               <td>hard</td>
               <td>
                 Qual o percentual médio de desconto concedido por canal de venda em 2026-03?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT canal_venda, ROUND(SUM(valor_desconto) * 100.0 / NULLIF(SUM(valor_bruto), 0), 2) AS pct_desconto FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-03' AND status_pedido = 'Faturado' GROUP BY canal_venda ORDER BY pct_desconto DESC</pre><pre>-- Gerado
+SELECT canal_venda, ROUND(SUM(valor_desconto) * 100.0 / NULLIF(SUM(valor_bruto), 0), 2) AS pct_desconto FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-03' AND status_pedido = 'Faturado' GROUP BY canal_venda ORDER BY pct_desconto DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_11__p1</code></td>
+              <td>Descontos</td>
+              <td>hard</td>
+              <td>
+                Qual foi a taxa efetiva de desconto por canal comercial em março de 2026?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT canal_venda, ROUND(SUM(valor_desconto) * 100.0 / NULLIF(SUM(valor_bruto), 0), 2) AS pct_desconto FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-03' AND status_pedido = 'Faturado' GROUP BY canal_venda ORDER BY pct_desconto DESC</pre><pre>-- Gerado
+SELECT canal_venda, ROUND(SUM(valor_desconto) * 100.0 / NULLIF(SUM(valor_bruto), 0), 2) AS pct_desconto FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-03' AND status_pedido = 'Faturado' GROUP BY canal_venda ORDER BY pct_desconto DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_11__p2</code></td>
+              <td>Descontos</td>
+              <td>hard</td>
+              <td>
+                Calcule o desconto percentual sobre o valor bruto por origem da venda em 2026-03.
                 <details>
                   <summary>Ver SQL esperado vs gerado</summary>
 <pre>-- Esperado
@@ -362,11 +728,71 @@ SELECT competencia_faturamento, COUNT(DISTINCT id_cliente) AS clientes_unicos FR
               <td>0.0ms</td>
             </tr>
             <tr>
+              <td><code>bmk_12__p1</code></td>
+              <td>Clientes</td>
+              <td>medium</td>
+              <td>
+                Qual a base mensal de clientes distintos ativos no E-commerce em 2026?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT competencia_faturamento, COUNT(DISTINCT id_cliente) AS clientes_unicos FROM analytics_dev.sales_gold.fct_pedidos WHERE canal_venda = 'E-commerce' AND LEFT(competencia_faturamento, 4) = '2026' AND status_pedido = 'Faturado' GROUP BY competencia_faturamento ORDER BY competencia_faturamento</pre><pre>-- Gerado
+SELECT competencia_faturamento, COUNT(DISTINCT id_cliente) AS clientes_unicos FROM analytics_dev.sales_gold.fct_pedidos WHERE canal_venda = 'E-commerce' AND LEFT(competencia_faturamento, 4) = '2026' AND status_pedido = 'Faturado' GROUP BY competencia_faturamento ORDER BY competencia_faturamento</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_12__p2</code></td>
+              <td>Clientes</td>
+              <td>medium</td>
+              <td>
+                Conte quantos clientes diferentes faturaram pelo E-commerce por competência em 2026.
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT competencia_faturamento, COUNT(DISTINCT id_cliente) AS clientes_unicos FROM analytics_dev.sales_gold.fct_pedidos WHERE canal_venda = 'E-commerce' AND LEFT(competencia_faturamento, 4) = '2026' AND status_pedido = 'Faturado' GROUP BY competencia_faturamento ORDER BY competencia_faturamento</pre><pre>-- Gerado
+SELECT competencia_faturamento, COUNT(DISTINCT id_cliente) AS clientes_unicos FROM analytics_dev.sales_gold.fct_pedidos WHERE canal_venda = 'E-commerce' AND LEFT(competencia_faturamento, 4) = '2026' AND status_pedido = 'Faturado' GROUP BY competencia_faturamento ORDER BY competencia_faturamento</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
               <td><code>bmk_13</code></td>
               <td>Pagamentos</td>
               <td>easy</td>
               <td>
                 Qual o ticket médio dos pedidos pagos via Pix em fevereiro de 2026?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT AVG(valor_liquido) AS ticket_medio_pix FROM analytics_dev.sales_gold.fct_pedidos WHERE forma_pagamento = 'Pix' AND competencia_faturamento = '2026-02' AND status_pedido = 'Faturado'</pre><pre>-- Gerado
+SELECT AVG(valor_liquido) AS ticket_medio_pix FROM analytics_dev.sales_gold.fct_pedidos WHERE forma_pagamento = 'Pix' AND competencia_faturamento = '2026-02' AND status_pedido = 'Faturado'</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_13__p1</code></td>
+              <td>Pagamentos</td>
+              <td>easy</td>
+              <td>
+                Qual foi o valor líquido médio por pedido faturado no Pix em 2026-02?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT AVG(valor_liquido) AS ticket_medio_pix FROM analytics_dev.sales_gold.fct_pedidos WHERE forma_pagamento = 'Pix' AND competencia_faturamento = '2026-02' AND status_pedido = 'Faturado'</pre><pre>-- Gerado
+SELECT AVG(valor_liquido) AS ticket_medio_pix FROM analytics_dev.sales_gold.fct_pedidos WHERE forma_pagamento = 'Pix' AND competencia_faturamento = '2026-02' AND status_pedido = 'Faturado'</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_13__p2</code></td>
+              <td>Pagamentos</td>
+              <td>easy</td>
+              <td>
+                Calcule o ticket médio das vendas pagas com Pix em fevereiro de 2026.
                 <details>
                   <summary>Ver SQL esperado vs gerado</summary>
 <pre>-- Esperado
@@ -392,11 +818,71 @@ SELECT canal_venda, MEASURE(receita_liquida_total) AS receita_oficial FROM analy
               <td>0.0ms</td>
             </tr>
             <tr>
+              <td><code>bmk_14__p1</code></td>
+              <td>KPIs Governados</td>
+              <td>hard</td>
+              <td>
+                Na Metric View de KPIs comerciais, quais canais superaram R$ 500 mil de receita oficial em 2026-01?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT canal_venda, MEASURE(receita_liquida_total) AS receita_oficial FROM analytics_dev.sales_gold.mv_kpis_comerciais WHERE competencia_faturamento = '2026-01' GROUP BY ALL HAVING MEASURE(receita_liquida_total) > 500000 ORDER BY receita_oficial DESC</pre><pre>-- Gerado
+SELECT canal_venda, MEASURE(receita_liquida_total) AS receita_oficial FROM analytics_dev.sales_gold.mv_kpis_comerciais WHERE competencia_faturamento = '2026-01' GROUP BY ALL HAVING MEASURE(receita_liquida_total) > 500000 ORDER BY receita_oficial DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_14__p2</code></td>
+              <td>KPIs Governados</td>
+              <td>hard</td>
+              <td>
+                Filtre os canais com faturamento oficial maior que 500.000 em janeiro de 2026 na mv_kpis_comerciais.
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT canal_venda, MEASURE(receita_liquida_total) AS receita_oficial FROM analytics_dev.sales_gold.mv_kpis_comerciais WHERE competencia_faturamento = '2026-01' GROUP BY ALL HAVING MEASURE(receita_liquida_total) > 500000 ORDER BY receita_oficial DESC</pre><pre>-- Gerado
+SELECT canal_venda, MEASURE(receita_liquida_total) AS receita_oficial FROM analytics_dev.sales_gold.mv_kpis_comerciais WHERE competencia_faturamento = '2026-01' GROUP BY ALL HAVING MEASURE(receita_liquida_total) > 500000 ORDER BY receita_oficial DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
               <td><code>bmk_15</code></td>
               <td>KPIs Governados</td>
               <td>medium</td>
               <td>
                 Qual o ticket médio e a taxa de desconto oficial por região em 2026-02 na Metric View?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT regiao, MEASURE(ticket_medio) AS ticket_medio, MEASURE(taxa_desconto_pct) AS taxa_desconto_pct FROM analytics_dev.sales_gold.mv_kpis_comerciais WHERE competencia_faturamento = '2026-02' GROUP BY ALL ORDER BY ticket_medio DESC</pre><pre>-- Gerado
+SELECT regiao, MEASURE(ticket_medio) AS ticket_medio, MEASURE(taxa_desconto_pct) AS taxa_desconto_pct FROM analytics_dev.sales_gold.mv_kpis_comerciais WHERE competencia_faturamento = '2026-02' GROUP BY ALL ORDER BY ticket_medio DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_15__p1</code></td>
+              <td>KPIs Governados</td>
+              <td>medium</td>
+              <td>
+                Consulte na mv_kpis_comerciais o ticket médio e o percentual de desconto oficial por região em fevereiro de 2026.
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT regiao, MEASURE(ticket_medio) AS ticket_medio, MEASURE(taxa_desconto_pct) AS taxa_desconto_pct FROM analytics_dev.sales_gold.mv_kpis_comerciais WHERE competencia_faturamento = '2026-02' GROUP BY ALL ORDER BY ticket_medio DESC</pre><pre>-- Gerado
+SELECT regiao, MEASURE(ticket_medio) AS ticket_medio, MEASURE(taxa_desconto_pct) AS taxa_desconto_pct FROM analytics_dev.sales_gold.mv_kpis_comerciais WHERE competencia_faturamento = '2026-02' GROUP BY ALL ORDER BY ticket_medio DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_15__p2</code></td>
+              <td>KPIs Governados</td>
+              <td>medium</td>
+              <td>
+                Mostre ticket_medio e taxa_desconto_pct governados por macrorregião na competência 2026-02.
                 <details>
                   <summary>Ver SQL esperado vs gerado</summary>
 <pre>-- Esperado
@@ -422,11 +908,71 @@ WITH seg AS (SELECT c.segmento, SUM(p.valor_liquido) AS receita FROM analytics_d
               <td>0.0ms</td>
             </tr>
             <tr>
+              <td><code>bmk_16__p1</code></td>
+              <td>Clientes</td>
+              <td>hard</td>
+              <td>
+                Qual o share de faturamento líquido por segmento de cliente no ano de 2026?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+WITH seg AS (SELECT c.segmento, SUM(p.valor_liquido) AS receita FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' GROUP BY c.segmento) SELECT segmento, receita, ROUND(receita * 100.0 / SUM(receita) OVER (), 2) AS share_pct FROM seg ORDER BY share_pct DESC</pre><pre>-- Gerado
+WITH seg AS (SELECT c.segmento, SUM(p.valor_liquido) AS receita FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' GROUP BY c.segmento) SELECT segmento, receita, ROUND(receita * 100.0 / SUM(receita) OVER (), 2) AS share_pct FROM seg ORDER BY share_pct DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_16__p2</code></td>
+              <td>Clientes</td>
+              <td>hard</td>
+              <td>
+                Calcule quanto cada carteira representa percentualmente na receita realizada de 2026.
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+WITH seg AS (SELECT c.segmento, SUM(p.valor_liquido) AS receita FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' GROUP BY c.segmento) SELECT segmento, receita, ROUND(receita * 100.0 / SUM(receita) OVER (), 2) AS share_pct FROM seg ORDER BY share_pct DESC</pre><pre>-- Gerado
+WITH seg AS (SELECT c.segmento, SUM(p.valor_liquido) AS receita FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' GROUP BY c.segmento) SELECT segmento, receita, ROUND(receita * 100.0 / SUM(receita) OVER (), 2) AS share_pct FROM seg ORDER BY share_pct DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
               <td><code>bmk_17</code></td>
               <td>Clientes</td>
               <td>easy</td>
               <td>
                 Quantos novos clientes foram cadastrados por segmento em 2026?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT segmento, COUNT(*) AS novos_clientes FROM analytics_dev.sales_gold.dim_clientes WHERE YEAR(data_cadastro) = 2026 GROUP BY segmento ORDER BY novos_clientes DESC</pre><pre>-- Gerado
+SELECT segmento, COUNT(*) AS novos_clientes FROM analytics_dev.sales_gold.dim_clientes WHERE YEAR(data_cadastro) = 2026 GROUP BY segmento ORDER BY novos_clientes DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_17__p1</code></td>
+              <td>Clientes</td>
+              <td>easy</td>
+              <td>
+                Qual foi a aquisição de contas novas por segmento de cliente durante 2026?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT segmento, COUNT(*) AS novos_clientes FROM analytics_dev.sales_gold.dim_clientes WHERE YEAR(data_cadastro) = 2026 GROUP BY segmento ORDER BY novos_clientes DESC</pre><pre>-- Gerado
+SELECT segmento, COUNT(*) AS novos_clientes FROM analytics_dev.sales_gold.dim_clientes WHERE YEAR(data_cadastro) = 2026 GROUP BY segmento ORDER BY novos_clientes DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_17__p2</code></td>
+              <td>Clientes</td>
+              <td>easy</td>
+              <td>
+                Conte quantos clientes entraram na base em 2026 quebrado por segmento.
                 <details>
                   <summary>Ver SQL esperado vs gerado</summary>
 <pre>-- Esperado
@@ -452,6 +998,36 @@ SELECT status_pedido, SUM(valor_bruto) AS total_bruto, SUM(valor_liquido) AS tot
               <td>0.0ms</td>
             </tr>
             <tr>
+              <td><code>bmk_18__p1</code></td>
+              <td>Faturamento</td>
+              <td>medium</td>
+              <td>
+                Compare total bruto, total líquido e diferença por situação do pedido em janeiro de 2026.
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT status_pedido, SUM(valor_bruto) AS total_bruto, SUM(valor_liquido) AS total_liquido, SUM(valor_bruto - valor_liquido) AS diferenca FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-01' GROUP BY status_pedido</pre><pre>-- Gerado
+SELECT status_pedido, SUM(valor_bruto) AS total_bruto, SUM(valor_liquido) AS total_liquido, SUM(valor_bruto - valor_liquido) AS diferenca FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-01' GROUP BY status_pedido</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_18__p2</code></td>
+              <td>Faturamento</td>
+              <td>medium</td>
+              <td>
+                Mostre valor_bruto vs valor_liquido agrupados por status_pedido em 2026-01.
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT status_pedido, SUM(valor_bruto) AS total_bruto, SUM(valor_liquido) AS total_liquido, SUM(valor_bruto - valor_liquido) AS diferenca FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-01' GROUP BY status_pedido</pre><pre>-- Gerado
+SELECT status_pedido, SUM(valor_bruto) AS total_bruto, SUM(valor_liquido) AS total_liquido, SUM(valor_bruto - valor_liquido) AS diferenca FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-01' GROUP BY status_pedido</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
               <td><code>bmk_19</code></td>
               <td>Faturamento</td>
               <td>hard</td>
@@ -467,11 +1043,71 @@ WITH mensal AS (SELECT competencia_faturamento, SUM(valor_liquido) AS receita FR
               <td>0.0ms</td>
             </tr>
             <tr>
+              <td><code>bmk_19__p1</code></td>
+              <td>Faturamento</td>
+              <td>hard</td>
+              <td>
+                Qual a variação MoM percentual do faturamento líquido entre janeiro e fevereiro de 2026?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+WITH mensal AS (SELECT competencia_faturamento, SUM(valor_liquido) AS receita FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento IN ('2026-01', '2026-02') AND status_pedido = 'Faturado' GROUP BY competencia_faturamento) SELECT ROUND((MAX(CASE WHEN competencia_faturamento = '2026-02' THEN receita END) - MAX(CASE WHEN competencia_faturamento = '2026-01' THEN receita END)) * 100.0 / NULLIF(MAX(CASE WHEN competencia_faturamento = '2026-01' THEN receita END), 0), 2) AS mom_pct FROM mensal</pre><pre>-- Gerado
+WITH mensal AS (SELECT competencia_faturamento, SUM(valor_liquido) AS receita FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento IN ('2026-01', '2026-02') AND status_pedido = 'Faturado' GROUP BY competencia_faturamento) SELECT ROUND((MAX(CASE WHEN competencia_faturamento = '2026-02' THEN receita END) - MAX(CASE WHEN competencia_faturamento = '2026-01' THEN receita END)) * 100.0 / NULLIF(MAX(CASE WHEN competencia_faturamento = '2026-01' THEN receita END), 0), 2) AS mom_pct FROM mensal</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_19__p2</code></td>
+              <td>Faturamento</td>
+              <td>hard</td>
+              <td>
+                Quanto a receita confirmada cresceu ou caiu de 2026-01 para 2026-02 em percentual?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+WITH mensal AS (SELECT competencia_faturamento, SUM(valor_liquido) AS receita FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento IN ('2026-01', '2026-02') AND status_pedido = 'Faturado' GROUP BY competencia_faturamento) SELECT ROUND((MAX(CASE WHEN competencia_faturamento = '2026-02' THEN receita END) - MAX(CASE WHEN competencia_faturamento = '2026-01' THEN receita END)) * 100.0 / NULLIF(MAX(CASE WHEN competencia_faturamento = '2026-01' THEN receita END), 0), 2) AS mom_pct FROM mensal</pre><pre>-- Gerado
+WITH mensal AS (SELECT competencia_faturamento, SUM(valor_liquido) AS receita FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento IN ('2026-01', '2026-02') AND status_pedido = 'Faturado' GROUP BY competencia_faturamento) SELECT ROUND((MAX(CASE WHEN competencia_faturamento = '2026-02' THEN receita END) - MAX(CASE WHEN competencia_faturamento = '2026-01' THEN receita END)) * 100.0 / NULLIF(MAX(CASE WHEN competencia_faturamento = '2026-01' THEN receita END), 0), 2) AS mom_pct FROM mensal</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.6ms</td>
+            </tr>
+            <tr>
               <td><code>bmk_20</code></td>
               <td>Operações</td>
               <td>medium</td>
               <td>
                 Quais pedidos devolvidos em 2026 superaram 10 mil reais de valor líquido?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT data_pedido, competencia_faturamento, canal_venda, regiao, valor_liquido FROM analytics_dev.sales_gold.fct_pedidos WHERE status_pedido = 'Devolvido' AND LEFT(competencia_faturamento, 4) = '2026' AND valor_liquido > 10000 ORDER BY valor_liquido DESC</pre><pre>-- Gerado
+SELECT data_pedido, competencia_faturamento, canal_venda, regiao, valor_liquido FROM analytics_dev.sales_gold.fct_pedidos WHERE status_pedido = 'Devolvido' AND LEFT(competencia_faturamento, 4) = '2026' AND valor_liquido > 10000 ORDER BY valor_liquido DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_20__p1</code></td>
+              <td>Operações</td>
+              <td>medium</td>
+              <td>
+                Liste as devoluções de 2026 com valor líquido acima de R$ 10.000.
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT data_pedido, competencia_faturamento, canal_venda, regiao, valor_liquido FROM analytics_dev.sales_gold.fct_pedidos WHERE status_pedido = 'Devolvido' AND LEFT(competencia_faturamento, 4) = '2026' AND valor_liquido > 10000 ORDER BY valor_liquido DESC</pre><pre>-- Gerado
+SELECT data_pedido, competencia_faturamento, canal_venda, regiao, valor_liquido FROM analytics_dev.sales_gold.fct_pedidos WHERE status_pedido = 'Devolvido' AND LEFT(competencia_faturamento, 4) = '2026' AND valor_liquido > 10000 ORDER BY valor_liquido DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_20__p2</code></td>
+              <td>Operações</td>
+              <td>medium</td>
+              <td>
+                Mostre pedidos com status Devolvido em 2026 cuja receita líquida passou de 10 mil.
                 <details>
                   <summary>Ver SQL esperado vs gerado</summary>
 <pre>-- Esperado
@@ -492,11 +1128,501 @@ SELECT data_pedido, competencia_faturamento, canal_venda, regiao, valor_liquido 
               <td>0.0ms</td>
             </tr>
             <tr>
+              <td><code>bmk_21__p1</code></td>
+              <td>Políticas Comerciais</td>
+              <td>medium</td>
+              <td>
+                Quem precisa aprovar descontos superiores a 15% segundo o manual comercial e qual arquivo cita essa norma?
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_21__p2</code></td>
+              <td>Políticas Comerciais</td>
+              <td>medium</td>
+              <td>
+                Qual a regra de governança para conceder mais de 15% de desconto conforme a política comercial?
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
               <td><code>bmk_22</code></td>
               <td>Políticas Comerciais</td>
               <td>hard</td>
               <td>
                 Compare os pedidos devolvidos de 2026-01 com o prazo máximo de devolução previsto na política comercial.
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_22__p1</code></td>
+              <td>Políticas Comerciais</td>
+              <td>hard</td>
+              <td>
+                Cruze as devoluções de janeiro de 2026 na base de pedidos com o limite de dias permitido pela política comercial.
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_22__p2</code></td>
+              <td>Políticas Comerciais</td>
+              <td>hard</td>
+              <td>
+                Analise os pedidos Devolvido em 2026-01 frente ao prazo oficial de devolução documentado no manual.
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_23</code></td>
+              <td>Faturamento</td>
+              <td>hard</td>
+              <td>
+                Quantos pedidos tiveram data de compra diferente do mês de competência de faturamento em 2026?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT COUNT(*) AS pedidos_virada_mes FROM analytics_dev.sales_gold.fct_pedidos WHERE LEFT(competencia_faturamento, 4) = '2026' AND DATE_FORMAT(data_pedido, 'yyyy-MM') <> competencia_faturamento</pre><pre>-- Gerado
+SELECT COUNT(*) AS pedidos_virada_mes FROM analytics_dev.sales_gold.fct_pedidos WHERE LEFT(competencia_faturamento, 4) = '2026' AND DATE_FORMAT(data_pedido, 'yyyy-MM') <> competencia_faturamento</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_23__p1</code></td>
+              <td>Faturamento</td>
+              <td>hard</td>
+              <td>
+                Em 2026, quantos pedidos viraram o mês entre data_pedido e competencia_faturamento?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT COUNT(*) AS pedidos_virada_mes FROM analytics_dev.sales_gold.fct_pedidos WHERE LEFT(competencia_faturamento, 4) = '2026' AND DATE_FORMAT(data_pedido, 'yyyy-MM') <> competencia_faturamento</pre><pre>-- Gerado
+SELECT COUNT(*) AS pedidos_virada_mes FROM analytics_dev.sales_gold.fct_pedidos WHERE LEFT(competencia_faturamento, 4) = '2026' AND DATE_FORMAT(data_pedido, 'yyyy-MM') <> competencia_faturamento</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_23__p2</code></td>
+              <td>Faturamento</td>
+              <td>hard</td>
+              <td>
+                Conte os pedidos de 2026 onde o mês da data do pedido não coincide com o mês de faturamento.
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT COUNT(*) AS pedidos_virada_mes FROM analytics_dev.sales_gold.fct_pedidos WHERE LEFT(competencia_faturamento, 4) = '2026' AND DATE_FORMAT(data_pedido, 'yyyy-MM') <> competencia_faturamento</pre><pre>-- Gerado
+SELECT COUNT(*) AS pedidos_virada_mes FROM analytics_dev.sales_gold.fct_pedidos WHERE LEFT(competencia_faturamento, 4) = '2026' AND DATE_FORMAT(data_pedido, 'yyyy-MM') <> competencia_faturamento</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_24</code></td>
+              <td>Descontos</td>
+              <td>medium</td>
+              <td>
+                Quantos pedidos faturados em 2026 receberam desconto superior a 15% sobre o valor bruto?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT COUNT(*) AS pedidos_desconto_alto FROM analytics_dev.sales_gold.fct_pedidos WHERE LEFT(competencia_faturamento, 4) = '2026' AND status_pedido = 'Faturado' AND (valor_desconto / NULLIF(valor_bruto, 0)) > 0.15</pre><pre>-- Gerado
+SELECT COUNT(*) AS pedidos_desconto_alto FROM analytics_dev.sales_gold.fct_pedidos WHERE LEFT(competencia_faturamento, 4) = '2026' AND status_pedido = 'Faturado' AND (valor_desconto / NULLIF(valor_bruto, 0)) > 0.15</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_24__p1</code></td>
+              <td>Descontos</td>
+              <td>medium</td>
+              <td>
+                Qual a quantidade de vendas confirmadas em 2026 com percentual de desconto acima de 15%?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT COUNT(*) AS pedidos_desconto_alto FROM analytics_dev.sales_gold.fct_pedidos WHERE LEFT(competencia_faturamento, 4) = '2026' AND status_pedido = 'Faturado' AND (valor_desconto / NULLIF(valor_bruto, 0)) > 0.15</pre><pre>-- Gerado
+SELECT COUNT(*) AS pedidos_desconto_alto FROM analytics_dev.sales_gold.fct_pedidos WHERE LEFT(competencia_faturamento, 4) = '2026' AND status_pedido = 'Faturado' AND (valor_desconto / NULLIF(valor_bruto, 0)) > 0.15</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_24__p2</code></td>
+              <td>Descontos</td>
+              <td>medium</td>
+              <td>
+                Conte os pedidos faturados no ano de 2026 que exigiram alçada por desconto > 15%.
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT COUNT(*) AS pedidos_desconto_alto FROM analytics_dev.sales_gold.fct_pedidos WHERE LEFT(competencia_faturamento, 4) = '2026' AND status_pedido = 'Faturado' AND (valor_desconto / NULLIF(valor_bruto, 0)) > 0.15</pre><pre>-- Gerado
+SELECT COUNT(*) AS pedidos_desconto_alto FROM analytics_dev.sales_gold.fct_pedidos WHERE LEFT(competencia_faturamento, 4) = '2026' AND status_pedido = 'Faturado' AND (valor_desconto / NULLIF(valor_bruto, 0)) > 0.15</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_25</code></td>
+              <td>KPIs Governados</td>
+              <td>medium</td>
+              <td>
+                Qual a receita líquida por região e canal no primeiro trimestre de 2026 usando a função oficial fn_receita_liquida_periodo?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT regiao, canal_venda, receita_liquida, ticket_medio FROM analytics_dev.sales_gold.fn_receita_liquida_periodo('2026-01', '2026-03') ORDER BY receita_liquida DESC</pre><pre>-- Gerado
+SELECT regiao, canal_venda, receita_liquida, ticket_medio FROM analytics_dev.sales_gold.fn_receita_liquida_periodo('2026-01', '2026-03') ORDER BY receita_liquida DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_25__p1</code></td>
+              <td>KPIs Governados</td>
+              <td>medium</td>
+              <td>
+                Consulte o trusted asset fn_receita_liquida_periodo entre 2026-01 e 2026-03.
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT regiao, canal_venda, receita_liquida, ticket_medio FROM analytics_dev.sales_gold.fn_receita_liquida_periodo('2026-01', '2026-03') ORDER BY receita_liquida DESC</pre><pre>-- Gerado
+SELECT regiao, canal_venda, receita_liquida, ticket_medio FROM analytics_dev.sales_gold.fn_receita_liquida_periodo('2026-01', '2026-03') ORDER BY receita_liquida DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_25__p2</code></td>
+              <td>KPIs Governados</td>
+              <td>medium</td>
+              <td>
+                Use a função governada de receita líquida por período para o Q1 de 2026.
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT regiao, canal_venda, receita_liquida, ticket_medio FROM analytics_dev.sales_gold.fn_receita_liquida_periodo('2026-01', '2026-03') ORDER BY receita_liquida DESC</pre><pre>-- Gerado
+SELECT regiao, canal_venda, receita_liquida, ticket_medio FROM analytics_dev.sales_gold.fn_receita_liquida_periodo('2026-01', '2026-03') ORDER BY receita_liquida DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_26</code></td>
+              <td>Operações</td>
+              <td>medium</td>
+              <td>
+                Qual a taxa de cancelamento por região em 2026-02 usando a função oficial fn_taxa_cancelamento_regiao?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT regiao, total_pedidos, pedidos_cancelados, taxa_cancelamento_pct FROM analytics_dev.sales_gold.fn_taxa_cancelamento_regiao('2026-02') ORDER BY taxa_cancelamento_pct DESC</pre><pre>-- Gerado
+SELECT regiao, total_pedidos, pedidos_cancelados, taxa_cancelamento_pct FROM analytics_dev.sales_gold.fn_taxa_cancelamento_regiao('2026-02') ORDER BY taxa_cancelamento_pct DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_26__p1</code></td>
+              <td>Operações</td>
+              <td>medium</td>
+              <td>
+                Execute a função governada fn_taxa_cancelamento_regiao para fevereiro de 2026.
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT regiao, total_pedidos, pedidos_cancelados, taxa_cancelamento_pct FROM analytics_dev.sales_gold.fn_taxa_cancelamento_regiao('2026-02') ORDER BY taxa_cancelamento_pct DESC</pre><pre>-- Gerado
+SELECT regiao, total_pedidos, pedidos_cancelados, taxa_cancelamento_pct FROM analytics_dev.sales_gold.fn_taxa_cancelamento_regiao('2026-02') ORDER BY taxa_cancelamento_pct DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_26__p2</code></td>
+              <td>Operações</td>
+              <td>medium</td>
+              <td>
+                Traga o percentual oficial de cancelamento regional de 2026-02 pelo trusted asset.
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT regiao, total_pedidos, pedidos_cancelados, taxa_cancelamento_pct FROM analytics_dev.sales_gold.fn_taxa_cancelamento_regiao('2026-02') ORDER BY taxa_cancelamento_pct DESC</pre><pre>-- Gerado
+SELECT regiao, total_pedidos, pedidos_cancelados, taxa_cancelamento_pct FROM analytics_dev.sales_gold.fn_taxa_cancelamento_regiao('2026-02') ORDER BY taxa_cancelamento_pct DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_27</code></td>
+              <td>Clientes</td>
+              <td>medium</td>
+              <td>
+                Quais os 10 maiores clientes Enterprise em 2026 segundo a função oficial fn_top_clientes_segmento?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT nome_cliente, uf, pedidos_faturados, receita_liquida FROM analytics_dev.sales_gold.fn_top_clientes_segmento('Enterprise', '2026', 10)</pre><pre>-- Gerado
+SELECT nome_cliente, uf, pedidos_faturados, receita_liquida FROM analytics_dev.sales_gold.fn_top_clientes_segmento('Enterprise', '2026', 10)</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_27__p1</code></td>
+              <td>Clientes</td>
+              <td>medium</td>
+              <td>
+                Liste o top 10 Enterprise de 2026 utilizando o trusted asset fn_top_clientes_segmento.
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT nome_cliente, uf, pedidos_faturados, receita_liquida FROM analytics_dev.sales_gold.fn_top_clientes_segmento('Enterprise', '2026', 10)</pre><pre>-- Gerado
+SELECT nome_cliente, uf, pedidos_faturados, receita_liquida FROM analytics_dev.sales_gold.fn_top_clientes_segmento('Enterprise', '2026', 10)</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_27__p2</code></td>
+              <td>Clientes</td>
+              <td>medium</td>
+              <td>
+                Consulte a função fn_top_clientes_segmento para o segmento Enterprise no ano de 2026.
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT nome_cliente, uf, pedidos_faturados, receita_liquida FROM analytics_dev.sales_gold.fn_top_clientes_segmento('Enterprise', '2026', 10)</pre><pre>-- Gerado
+SELECT nome_cliente, uf, pedidos_faturados, receita_liquida FROM analytics_dev.sales_gold.fn_top_clientes_segmento('Enterprise', '2026', 10)</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_28</code></td>
+              <td>Faturamento</td>
+              <td>hard</td>
+              <td>
+                Qual a receita líquida total de pedidos faturados em 2026 excluindo clientes do segmento Interno?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT SUM(p.valor_liquido) AS receita_liquida_externa FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' AND c.segmento <> 'Interno'</pre><pre>-- Gerado
+SELECT SUM(p.valor_liquido) AS receita_liquida_externa FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' AND c.segmento <> 'Interno'</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_28__p1</code></td>
+              <td>Faturamento</td>
+              <td>hard</td>
+              <td>
+                Quanto faturamos em 2026 desconsiderando contas internas de teste?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT SUM(p.valor_liquido) AS receita_liquida_externa FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' AND c.segmento <> 'Interno'</pre><pre>-- Gerado
+SELECT SUM(p.valor_liquido) AS receita_liquida_externa FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' AND c.segmento <> 'Interno'</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_28__p2</code></td>
+              <td>Faturamento</td>
+              <td>hard</td>
+              <td>
+                Calcule o faturamento líquido realizado de 2026 sem o segmento Interno.
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT SUM(p.valor_liquido) AS receita_liquida_externa FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' AND c.segmento <> 'Interno'</pre><pre>-- Gerado
+SELECT SUM(p.valor_liquido) AS receita_liquida_externa FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' AND c.segmento <> 'Interno'</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_29</code></td>
+              <td>Operações</td>
+              <td>easy</td>
+              <td>
+                Qual o valor total de pedidos ainda pendentes por região em março de 2026?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT regiao, COUNT(*) AS qtd_pendentes, SUM(valor_liquido) AS valor_pendente FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-03' AND status_pedido = 'Pendente' GROUP BY regiao ORDER BY valor_pendente DESC</pre><pre>-- Gerado
+SELECT regiao, COUNT(*) AS qtd_pendentes, SUM(valor_liquido) AS valor_pendente FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-03' AND status_pedido = 'Pendente' GROUP BY regiao ORDER BY valor_pendente DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_29__p1</code></td>
+              <td>Operações</td>
+              <td>easy</td>
+              <td>
+                Quanto temos em backlog de pedidos com status Pendente por região em 2026-03?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT regiao, COUNT(*) AS qtd_pendentes, SUM(valor_liquido) AS valor_pendente FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-03' AND status_pedido = 'Pendente' GROUP BY regiao ORDER BY valor_pendente DESC</pre><pre>-- Gerado
+SELECT regiao, COUNT(*) AS qtd_pendentes, SUM(valor_liquido) AS valor_pendente FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-03' AND status_pedido = 'Pendente' GROUP BY regiao ORDER BY valor_pendente DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_29__p2</code></td>
+              <td>Operações</td>
+              <td>easy</td>
+              <td>
+                Mostre a soma de valor líquido pendente por praça em março de 2026.
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT regiao, COUNT(*) AS qtd_pendentes, SUM(valor_liquido) AS valor_pendente FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-03' AND status_pedido = 'Pendente' GROUP BY regiao ORDER BY valor_pendente DESC</pre><pre>-- Gerado
+SELECT regiao, COUNT(*) AS qtd_pendentes, SUM(valor_liquido) AS valor_pendente FROM analytics_dev.sales_gold.fct_pedidos WHERE competencia_faturamento = '2026-03' AND status_pedido = 'Pendente' GROUP BY regiao ORDER BY valor_pendente DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_30</code></td>
+              <td>Geografia</td>
+              <td>medium</td>
+              <td>
+                Quais UFs possuem maior ticket médio de pedidos faturados em 2026 entre clientes SMB?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT c.uf, AVG(p.valor_liquido) AS ticket_medio_smb FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE c.segmento = 'SMB' AND LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' GROUP BY c.uf ORDER BY ticket_medio_smb DESC</pre><pre>-- Gerado
+SELECT c.uf, AVG(p.valor_liquido) AS ticket_medio_smb FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE c.segmento = 'SMB' AND LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' GROUP BY c.uf ORDER BY ticket_medio_smb DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_30__p1</code></td>
+              <td>Geografia</td>
+              <td>medium</td>
+              <td>
+                Qual o ranking de estados por ticket médio no segmento SMB durante 2026?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT c.uf, AVG(p.valor_liquido) AS ticket_medio_smb FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE c.segmento = 'SMB' AND LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' GROUP BY c.uf ORDER BY ticket_medio_smb DESC</pre><pre>-- Gerado
+SELECT c.uf, AVG(p.valor_liquido) AS ticket_medio_smb FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE c.segmento = 'SMB' AND LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' GROUP BY c.uf ORDER BY ticket_medio_smb DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_30__p2</code></td>
+              <td>Geografia</td>
+              <td>medium</td>
+              <td>
+                Calcule a média de valor líquido por UF para a carteira SMB em 2026.
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT c.uf, AVG(p.valor_liquido) AS ticket_medio_smb FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE c.segmento = 'SMB' AND LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' GROUP BY c.uf ORDER BY ticket_medio_smb DESC</pre><pre>-- Gerado
+SELECT c.uf, AVG(p.valor_liquido) AS ticket_medio_smb FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE c.segmento = 'SMB' AND LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' GROUP BY c.uf ORDER BY ticket_medio_smb DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_31</code></td>
+              <td>Clientes</td>
+              <td>hard</td>
+              <td>
+                Qual a média de pedidos faturados por cliente ativo em cada segmento no ano de 2026?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT c.segmento, ROUND(COUNT(*) * 1.0 / NULLIF(COUNT(DISTINCT p.id_cliente), 0), 2) AS pedidos_por_cliente FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' GROUP BY c.segmento ORDER BY pedidos_por_cliente DESC</pre><pre>-- Gerado
+SELECT c.segmento, ROUND(COUNT(*) * 1.0 / NULLIF(COUNT(DISTINCT p.id_cliente), 0), 2) AS pedidos_por_cliente FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' GROUP BY c.segmento ORDER BY pedidos_por_cliente DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_31__p1</code></td>
+              <td>Clientes</td>
+              <td>hard</td>
+              <td>
+                Qual a frequência média de compras por cliente distinto em cada segmento durante 2026?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT c.segmento, ROUND(COUNT(*) * 1.0 / NULLIF(COUNT(DISTINCT p.id_cliente), 0), 2) AS pedidos_por_cliente FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' GROUP BY c.segmento ORDER BY pedidos_por_cliente DESC</pre><pre>-- Gerado
+SELECT c.segmento, ROUND(COUNT(*) * 1.0 / NULLIF(COUNT(DISTINCT p.id_cliente), 0), 2) AS pedidos_por_cliente FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' GROUP BY c.segmento ORDER BY pedidos_por_cliente DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_31__p2</code></td>
+              <td>Clientes</td>
+              <td>hard</td>
+              <td>
+                Divida o número de pedidos faturados pelo total de clientes únicos por segmento em 2026.
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT c.segmento, ROUND(COUNT(*) * 1.0 / NULLIF(COUNT(DISTINCT p.id_cliente), 0), 2) AS pedidos_por_cliente FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' GROUP BY c.segmento ORDER BY pedidos_por_cliente DESC</pre><pre>-- Gerado
+SELECT c.segmento, ROUND(COUNT(*) * 1.0 / NULLIF(COUNT(DISTINCT p.id_cliente), 0), 2) AS pedidos_por_cliente FROM analytics_dev.sales_gold.fct_pedidos p JOIN analytics_dev.sales_gold.dim_clientes c ON p.id_cliente = c.id_cliente WHERE LEFT(p.competencia_faturamento, 4) = '2026' AND p.status_pedido = 'Faturado' GROUP BY c.segmento ORDER BY pedidos_por_cliente DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_32</code></td>
+              <td>KPIs Governados</td>
+              <td>medium</td>
+              <td>
+                Qual a receita líquida oficial consolidada por canal no primeiro trimestre de 2026 na Metric View?
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT canal_venda, MEASURE(receita_liquida_total) AS receita_q1 FROM analytics_dev.sales_gold.mv_kpis_comerciais WHERE competencia_faturamento BETWEEN '2026-01' AND '2026-03' GROUP BY ALL ORDER BY receita_q1 DESC</pre><pre>-- Gerado
+SELECT canal_venda, MEASURE(receita_liquida_total) AS receita_q1 FROM analytics_dev.sales_gold.mv_kpis_comerciais WHERE competencia_faturamento BETWEEN '2026-01' AND '2026-03' GROUP BY ALL ORDER BY receita_q1 DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_32__p1</code></td>
+              <td>KPIs Governados</td>
+              <td>medium</td>
+              <td>
+                Some a receita oficial por canal de venda de 2026-01 a 2026-03 consultando mv_kpis_comerciais.
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT canal_venda, MEASURE(receita_liquida_total) AS receita_q1 FROM analytics_dev.sales_gold.mv_kpis_comerciais WHERE competencia_faturamento BETWEEN '2026-01' AND '2026-03' GROUP BY ALL ORDER BY receita_q1 DESC</pre><pre>-- Gerado
+SELECT canal_venda, MEASURE(receita_liquida_total) AS receita_q1 FROM analytics_dev.sales_gold.mv_kpis_comerciais WHERE competencia_faturamento BETWEEN '2026-01' AND '2026-03' GROUP BY ALL ORDER BY receita_q1 DESC</pre>                </details>
+              </td>
+              <td><span class="pill pill-GOOD">GOOD</span></td>
+              <td>0.0ms</td>
+            </tr>
+            <tr>
+              <td><code>bmk_32__p2</code></td>
+              <td>KPIs Governados</td>
+              <td>medium</td>
+              <td>
+                Mostre MEASURE(receita_liquida_total) por canal no Q1 de 2026 pela Metric View.
+                <details>
+                  <summary>Ver SQL esperado vs gerado</summary>
+<pre>-- Esperado
+SELECT canal_venda, MEASURE(receita_liquida_total) AS receita_q1 FROM analytics_dev.sales_gold.mv_kpis_comerciais WHERE competencia_faturamento BETWEEN '2026-01' AND '2026-03' GROUP BY ALL ORDER BY receita_q1 DESC</pre><pre>-- Gerado
+SELECT canal_venda, MEASURE(receita_liquida_total) AS receita_q1 FROM analytics_dev.sales_gold.mv_kpis_comerciais WHERE competencia_faturamento BETWEEN '2026-01' AND '2026-03' GROUP BY ALL ORDER BY receita_q1 DESC</pre>                </details>
               </td>
               <td><span class="pill pill-GOOD">GOOD</span></td>
               <td>0.0ms</td>
