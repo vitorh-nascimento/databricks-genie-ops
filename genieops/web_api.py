@@ -417,7 +417,10 @@ def create_app(
     def serve_index():
         index_html = web_dist / "index.html"
         if index_html.exists():
-            return FileResponse(index_html)
+            return FileResponse(
+                index_html,
+                headers={"Cache-Control": "no-store, no-cache, must-revalidate"},
+            )
         return {
             "message": "Databricks GenieOps API ativa. Execute `npm.cmd run build` em `web/` para habilitar a interface React.",
             "docs_url": "/docs",
