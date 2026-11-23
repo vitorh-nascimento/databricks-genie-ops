@@ -381,19 +381,23 @@ RETURNS TABLE (
 )
 COMMENT 'Trusted Asset oficial: retorna o ranking dos maiores clientes de um segmento em um ano considerando apenas pedidos Faturados.'
 RETURN
-  SELECT
-    c.nome_cliente,
-    c.uf,
-    COUNT(p.id_pedido) AS pedidos_faturados,
-    ROUND(SUM(p.valor_liquido), 2) AS receita_liquida
-  FROM {prefix}.fct_pedidos p
-  JOIN {prefix}.dim_clientes c ON p.id_cliente = c.id_cliente
-  WHERE c.segmento = p_segmento
-    AND LEFT(p.competencia_faturamento, 4) = p_ano
-    AND p.status_pedido = 'Faturado'
-  GROUP BY c.nome_cliente, c.uf
-  ORDER BY receita_liquida DESC
-  LIMIT p_limite;
+  WITH ranked AS (
+    SELECT
+      c.nome_cliente,
+      c.uf,
+      COUNT(p.id_pedido) AS pedidos_faturados,
+      ROUND(SUM(p.valor_liquido), 2) AS receita_liquida,
+      ROW_NUMBER() OVER (ORDER BY SUM(p.valor_liquido) DESC) AS rn
+    FROM {prefix}.fct_pedidos p
+    JOIN {prefix}.dim_clientes c ON p.id_cliente = c.id_cliente
+    WHERE c.segmento = p_segmento
+      AND LEFT(p.competencia_faturamento, 4) = p_ano
+      AND p.status_pedido = 'Faturado'
+    GROUP BY c.nome_cliente, c.uf
+  )
+  SELECT nome_cliente, uf, pedidos_faturados, receita_liquida
+  FROM ranked
+  WHERE rn <= p_limite;
 """
 
 

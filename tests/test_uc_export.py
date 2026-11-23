@@ -7,13 +7,14 @@ from pathlib import Path
 import pytest
 
 from genieops.benchmark import run_benchmark
+from genieops.databricks_client import parse_query_result
 from genieops.history import HistoryStore
 from genieops.uc_export import (
     assert_uc_export_sql_safe,
     build_uc_export_plan,
     execute_uc_export_plan,
 )
-from tests.conftest import make_json_response
+from tests.conftest import FakeCompletedProcess, make_json_response
 
 
 def test_build_uc_export_plan_four_tables_and_events(exemplo_bundle, tmp_path: Path):
@@ -102,3 +103,28 @@ def test_execute_uc_export_plan_calls_cli(exemplo_bundle, tmp_path: Path, mock_c
     executed_plan = execute_uc_export_plan(plan, client=client, warehouse_id="wh_ops")
     assert executed_plan.executed is True
     assert len(runner.calls) == 2  # 1 DDL + 1 MERGE
+
+
+def test_execute_uc_export_handles_plain_text_ddl_and_single_row_json(
+    exemplo_bundle, tmp_path: Path, mock_client_factory
+):
+    # 1. `aitools tools query` retorna texto plano em DDL sem linhas
+    history = HistoryStore(db_path=tmp_path / "history.db")
+    run_benchmark(exemplo_bundle, env_name="dev", mode="offline", history=history)
+    plan = build_uc_export_plan(
+        exemplo_bundle,
+        history,
+        catalog="analytics_ops",
+        schema="genieops_audit",
+        schema_mode="events",
+    )
+    client, _ = mock_client_factory(
+        lambda _cmd: FakeCompletedProcess(returncode=0, stdout="Query executed successfully (no results)\n")
+    )
+    executed = execute_uc_export_plan(plan, client=client, warehouse_id="wh_ops")
+    assert executed.executed is True
+
+    # 2. `aitools tools query -o json` com 1 única linha agregada retorna lista de 1 dict
+    qr = parse_query_result([{"receita_liquida": "3184073.80"}])
+    assert qr.columns == ["receita_liquida"]
+    assert qr.rows == [["3184073.80"]]

@@ -87,7 +87,11 @@ class DatabricksClient:
         raw_out = (res.stdout or "").strip()
         if not raw_out:
             return {}
-        return json.loads(raw_out)
+        try:
+            return json.loads(raw_out)
+        except json.JSONDecodeError:
+            # Comandos DDL/DML sem result set em `aitools tools query` retornam texto plano mesmo com `-o json`
+            return {"message": raw_out}
 
     # --- Workspace & Warehouses ---
 
@@ -310,7 +314,12 @@ class DatabricksClient:
 
 def parse_query_result(raw: Any) -> QueryResult:
     """Normaliza diferentes formatos JSON de retorno da Databricks CLI para QueryResult."""
-    if isinstance(raw, list) and len(raw) == 1 and isinstance(raw[0], dict):
+    if (
+        isinstance(raw, list)
+        and len(raw) == 1
+        and isinstance(raw[0], dict)
+        and any(k in raw[0] for k in ("statement_response", "manifest", "columns", "rows"))
+    ):
         raw = raw[0]
 
     if isinstance(raw, dict):
