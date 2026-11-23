@@ -19,6 +19,7 @@ build/
 .genieops/history.db
 .genieops/backups/
 .genieops/staging/
+spaces/*_real/
 *.db
 *.db-wal
 *.db-shm
