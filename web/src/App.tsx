@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import {
   Activity,
   AlertTriangle,
+  BookOpen,
   CheckCircle2,
+  Compass,
   Copy,
   Database,
   FileCode2,
@@ -26,6 +28,7 @@ import {
   streamAgentQuestion,
   triggerOfflineBenchmark,
 } from './api';
+import { HomeGuide } from './components/HomeGuide';
 import { TrendChart } from './components/TrendChart';
 import type {
   BenchmarkRunRecord,
@@ -40,8 +43,10 @@ import type {
 } from './types';
 
 type TabKey = 'overview' | 'benchmarks' | 'diagnose' | 'agent' | 'delta';
+type PageView = 'guide' | 'workspace';
 
 export function App() {
+  const [pageView, setPageView] = useState<PageView>('guide');
   const [portfolio, setPortfolio] = useState<SpacesListResponse | null>(null);
   const [selectedSpace, setSelectedSpace] = useState<string>('');
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
@@ -215,16 +220,42 @@ export function App() {
               </p>
             </div>
           </div>
-          <button
-            onClick={() => {
-              void loadPortfolio();
-              if (selectedSpace) void loadSpaceData(selectedSpace);
-            }}
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:border-indigo-500 hover:text-white"
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-            Atualizar
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <nav className="inline-flex rounded-xl border border-slate-800 bg-slate-900/90 p-1">
+              <button
+                onClick={() => setPageView('guide')}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                  pageView === 'guide'
+                    ? 'bg-indigo-600 text-white shadow'
+                    : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                <BookOpen className="h-3.5 w-3.5" />
+                Início &amp; Tutorial
+              </button>
+              <button
+                onClick={() => setPageView('workspace')}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                  pageView === 'workspace'
+                    ? 'bg-indigo-600 text-white shadow'
+                    : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                <Compass className="h-3.5 w-3.5" />
+                Painel de Spaces
+              </button>
+            </nav>
+            <button
+              onClick={() => {
+                void loadPortfolio();
+                if (selectedSpace) void loadSpaceData(selectedSpace);
+              }}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:border-indigo-500 hover:text-white"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              Atualizar
+            </button>
+          </div>
         </div>
       </header>
 
@@ -238,6 +269,16 @@ export function App() {
           </div>
         )}
 
+        {pageView === 'guide' ? (
+          <HomeGuide
+            portfolio={portfolio}
+            onOpenDashboard={(spaceName) => {
+              if (spaceName) setSelectedSpace(spaceName);
+              setPageView('workspace');
+            }}
+          />
+        ) : (
+          <>
         {/* Portfolio KPIs */}
         {portfolio && (
           <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -848,6 +889,8 @@ export function App() {
             )}
           </section>
         </div>
+          </>
+        )}
       </main>
     </div>
   );

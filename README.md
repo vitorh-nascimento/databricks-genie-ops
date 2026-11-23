@@ -195,10 +195,11 @@ O kit pronto em [examples/curadoria_vendas/](examples/curadoria_vendas/GUIA_RODA
 
 ## Painel Web Local (`genieops serve` / `.\start.ps1`)
 
-O dashboard local roda por padrão em **`http://genieops.localhost:8765`** (e modo dev Vite na porta dedicada **`5765`** via `.\start.ps1 -Dev`), isolando origem/cookies e evitando conflitos com portas comuns (`8000`, `8080`, `8185`, `5173`, `5185`, `3000`). Oferece 5 visões integradas:
+O dashboard local roda por padrão em **`http://genieops.localhost:8765`** (e modo dev Vite na porta dedicada **`5765`** via `.\start.ps1 -Dev`), isolando origem/cookies e evitando conflitos com portas comuns (`8000`, `8080`, `8185`, `5173`, `5185`, `3000`). Oferece uma **Tela Inicial interativa (`Início & Tutorial`)** + **5 visões operacionais integradas**:
 
-1. **Health Check & Fontes:** Health Score consolidado, filtro por severidade (`ERROR`/`WARNING`/`INFO`), recomendações acionáveis e inventário de tabelas, Metric Views e UC Volumes.
-2. **Benchmarks & Regressões:** gráfico SVG de tendência histórica de assertividade (com meta >= 90%), execução de benchmark offline com 1 clique, badges de regressão (`FIXED` / `REGRESSED`) e detalhamento por pergunta.
+0. **Início & Tutorial de Adoção Corporativa (`HomeGuide`):** tela inicial detalhada com mapa mental (Git ↔ Motor GenieOps ↔ Databricks), passo a passo completo em 6 etapas para levar o framework ao ambiente de trabalho, hierarquia oficial de 8 camadas, quadro de governança/segurança para aprovação de InfoSec, checklist interativo de Go-Live (salvo no navegador) e catálogo copiável de comandos CLI por fase.
+1. **Health Check & Fontes:** Health Score consolidado, filtro por severidade (`ERROR`/`WARNING`/`INFO`), recomendações acionáveis e inventário de tabelas, Metric Views, UC Volumes e SQL Functions (Trusted Assets).
+2. **Benchmarks & Regressões:** gráfico SVG de tendência histórica de assertividade (com meta >= 90%), execução de benchmark offline com 1 clique (com rótulo de rodada e expansão de paráfrases), badges de regressão (`FIXED` / `REGRESSED`) e detalhamento por pergunta.
 3. **Diagnóstico (Causa Raiz):** cards de causa raiz com nível de confiança, alavanca estruturada recomendada, antipadrões a evitar e referência fixa da hierarquia oficial de 8 camadas.
 4. **Agent Mode SSE + LLM-as-a-Judge:** playground de streaming Server-Sent Events exibindo em tempo real `response.created`, `reasoning`, `execute_sql`, `search_context_files`, `response.completed` e o veredito do juiz plugável (modo preview local seguro ou modo conectado ao Databricks real).
 5. **Exportação Delta (UC):** gerador interativo de SQL (`four_tables` vs `events`) com cópia rápida para execução ou revisão em PR.
