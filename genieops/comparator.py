@@ -89,39 +89,104 @@ def _row_sort_key(row: list[Any]) -> tuple[Any, ...]:
     return tuple(key_parts)
 
 
-def _align_columns(
+def _columns_equal_as_multiset(
+    exp_values: list[Any],
+    act_values: list[Any],
+    rel_tol: float,
+    abs_tol: float,
+) -> bool:
+    """Compara duas colunas como multiconjuntos de valores (ignora ordem das linhas)."""
+    exp_sorted = sorted(exp_values, key=lambda v: _row_sort_key([v]))
+    act_sorted = sorted(act_values, key=lambda v: _row_sort_key([v]))
+    return all(
+        _cells_equal(e, a, rel_tol=rel_tol, abs_tol=abs_tol)
+        for e, a in zip(exp_sorted, act_sorted)
+    )
+
+
+def _candidate_columns(
     expected_cols: list[str],
     actual_cols: list[str],
-) -> tuple[list[int], list[tuple[str, str]]] | None:
+    exp_rows: list[list[Any]],
+    act_rows: list[list[Any]],
+    rel_tol: float,
+    abs_tol: float,
+) -> list[list[int]]:
     """
-    Alinha colunas de `actual` à ordem de `expected`.
-    1) Se nomes normalizados baterem (mesmo em ordem diferente), reordena por nome.
-    2) Se quantidade de colunas for igual mas aliases diferirem (ex: SUM(valor) vs total_gasto),
-       alinha posicionalmente.
+    Para cada coluna esperada, lista as colunas obtidas cujo conteúdo é compatível.
+
+    O casamento é feito pelos VALORES (não pelo alias), porque o Genie escolhe nomes livremente
+    (`receita` vs `receita_liquida_total`) e frequentemente devolve as colunas em outra ordem.
+    Colunas com o mesmo nome normalizado vêm primeiro na lista de candidatas.
     """
-    if len(expected_cols) != len(actual_cols):
+    act_norm = [c.strip().lower() for c in actual_cols]
+    candidates: list[list[int]] = []
+    for i, ec in enumerate(expected_cols):
+        exp_values = [row[i] for row in exp_rows]
+        matches = [
+            j
+            for j in range(len(actual_cols))
+            if _columns_equal_as_multiset(
+                exp_values, [row[j] for row in act_rows], rel_tol=rel_tol, abs_tol=abs_tol
+            )
+        ]
+        matches.sort(key=lambda j: act_norm[j] != ec.strip().lower())
+        candidates.append(matches)
+    return candidates
+
+
+def _rows_match(
+    exp_rows: list[list[Any]],
+    act_rows: list[list[Any]],
+    indices: list[int],
+    rel_tol: float,
+    abs_tol: float,
+    enforce_order: bool,
+) -> list[str]:
+    """Compara linha a linha usando o mapeamento de colunas; retorna as divergências (máx. 10)."""
+    projected = [[row[idx] for idx in indices] for row in act_rows]
+    if enforce_order:
+        exp_ordered, act_ordered = list(exp_rows), projected
+    else:
+        exp_ordered = sorted(exp_rows, key=_row_sort_key)
+        act_ordered = sorted(projected, key=_row_sort_key)
+
+    diffs: list[str] = []
+    for r_idx, (erow, arow) in enumerate(zip(exp_ordered, act_ordered)):
+        for c_idx, (ecell, acell) in enumerate(zip(erow, arow)):
+            if not _cells_equal(ecell, acell, rel_tol=rel_tol, abs_tol=abs_tol):
+                diffs.append(
+                    f"Linha {r_idx + 1}, coluna #{c_idx + 1}: esperado={ecell!r}, obtido={acell!r}"
+                )
+                if len(diffs) >= 10:
+                    return diffs
+    return diffs
+
+
+def _search_alignment(
+    candidates: list[list[int]],
+    check: Any,
+    max_attempts: int = 500,
+) -> list[int] | None:
+    """Busca (com backtracking limitado) uma atribuição injetiva coluna esperada → obtida válida."""
+    attempts = 0
+
+    def dfs(pos: int, chosen: list[int]) -> list[int] | None:
+        nonlocal attempts
+        if pos == len(candidates):
+            attempts += 1
+            return list(chosen) if check(chosen) else None
+        for j in candidates[pos]:
+            if j in chosen or attempts >= max_attempts:
+                continue
+            chosen.append(j)
+            found = dfs(pos + 1, chosen)
+            chosen.pop()
+            if found is not None:
+                return found
         return None
 
-    exp_norm = [c.strip().lower() for c in expected_cols]
-    act_norm = [c.strip().lower() for c in actual_cols]
-
-    if sorted(exp_norm) == sorted(act_norm):
-        used: set[int] = set()
-        indices: list[int] = []
-        mapping: list[tuple[str, str]] = []
-        for i, ec in enumerate(exp_norm):
-            for j, ac in enumerate(act_norm):
-                if ac == ec and j not in used:
-                    used.add(j)
-                    indices.append(j)
-                    mapping.append((expected_cols[i], actual_cols[j]))
-                    break
-        return indices, mapping
-
-    # Fallback posicional (evita falso negativo por diferença de alias no SELECT)
-    indices = list(range(len(actual_cols)))
-    mapping = list(zip(expected_cols, actual_cols))
-    return indices, mapping
+    return dfs(0, [])
 
 
 def compare_result_sets(
@@ -130,10 +195,14 @@ def compare_result_sets(
     rel_tol: float = 1e-4,
     abs_tol: float = 1e-2,
     enforce_order: bool = False,
+    allow_extra_columns: bool = True,
 ) -> ComparisonResult:
     """
     Compara dois Result Sets SQL (Ground Truth vs SQL gerado pelo Genie).
-    Evita falsos negativos quando o Genie escreve SQL diferente porém matematicamente equivalente.
+    Evita falsos negativos quando o Genie escreve SQL diferente porém matematicamente equivalente:
+    - aliases e ordem de colunas diferentes (colunas casadas pelos valores, não pelo nome);
+    - colunas extras de contexto no resultado do Genie (ex.: `id_cliente`, `total_pedidos`),
+      desde que todas as colunas esperadas estejam presentes e a contagem de linhas bata.
     """
     exp_rows = expected.rows or []
     act_rows = actual.rows or []
@@ -157,8 +226,7 @@ def compare_result_sets(
     exp_cols = expected.columns or [f"col_{i}" for i in range(len(exp_rows[0]))]
     act_cols = actual.columns or [f"col_{i}" for i in range(len(act_rows[0]))]
 
-    alignment = _align_columns(exp_cols, act_cols)
-    if alignment is None:
+    if len(act_cols) < len(exp_cols) or (not allow_extra_columns and len(act_cols) != len(exp_cols)):
         return ComparisonResult(
             equivalent=False,
             reason=f"Quantidade de colunas divergente: esperado={len(exp_cols)} ({exp_cols}), obtido={len(act_cols)} ({act_cols}).",
@@ -166,42 +234,46 @@ def compare_result_sets(
             actual_row_count=len(act_rows),
         )
 
-    col_indices, col_mapping = alignment
-    reordered_act = [[row[idx] for idx in col_indices] for row in act_rows]
-
-    if enforce_order:
-        exp_ordered = list(exp_rows)
-        act_ordered = reordered_act
-    else:
-        exp_ordered = sorted(exp_rows, key=_row_sort_key)
-        act_ordered = sorted(reordered_act, key=_row_sort_key)
-
-    diffs: list[str] = []
-    for r_idx, (erow, arow) in enumerate(zip(exp_ordered, act_ordered)):
-        for c_idx, (ecell, acell) in enumerate(zip(erow, arow)):
-            if not _cells_equal(ecell, acell, rel_tol=rel_tol, abs_tol=abs_tol):
-                col_label = exp_cols[c_idx] if c_idx < len(exp_cols) else f"col_{c_idx}"
-                diffs.append(
-                    f"Linha {r_idx + 1}, coluna '{col_label}': esperado={ecell!r}, obtido={acell!r}"
-                )
-                if len(diffs) >= 10:
-                    break
-        if len(diffs) >= 10:
-            break
-
-    if diffs:
+    candidates = _candidate_columns(exp_cols, act_cols, exp_rows, act_rows, rel_tol, abs_tol)
+    missing = [exp_cols[i] for i, cands in enumerate(candidates) if not cands]
+    if missing:
+        # Para diagnóstico, compara posicionalmente quando a contagem de colunas é igual
+        diffs: list[str] = []
+        if len(act_cols) == len(exp_cols):
+            diffs = _rows_match(
+                exp_rows, act_rows, list(range(len(act_cols))), rel_tol, abs_tol, enforce_order
+            )
         return ComparisonResult(
             equivalent=False,
-            reason=f"Divergência de valores em {len(diffs)} célula(s).",
+            reason=f"Nenhuma coluna obtida tem os mesmos valores de {missing} (obtido: {act_cols}).",
             expected_row_count=len(exp_rows),
             actual_row_count=len(act_rows),
-            column_mapping=col_mapping,
             differences=diffs,
         )
 
+    indices = _search_alignment(
+        candidates,
+        lambda chosen: not _rows_match(exp_rows, act_rows, chosen, rel_tol, abs_tol, enforce_order),
+    )
+    if indices is None:
+        fallback = [cands[0] for cands in candidates]
+        return ComparisonResult(
+            equivalent=False,
+            reason="Colunas individualmente compatíveis, mas as linhas não se combinam da mesma forma (ou a ordem exigida diverge).",
+            expected_row_count=len(exp_rows),
+            actual_row_count=len(act_rows),
+            column_mapping=[(exp_cols[i], act_cols[j]) for i, j in enumerate(fallback)],
+            differences=_rows_match(exp_rows, act_rows, fallback, rel_tol, abs_tol, enforce_order),
+        )
+
+    col_mapping = [(exp_cols[i], act_cols[j]) for i, j in enumerate(indices)]
+    extra = [c for j, c in enumerate(act_cols) if j not in indices]
+    reason = "Result Sets matematicamente equivalentes dentro da tolerância configurada."
+    if extra:
+        reason += f" Colunas extras ignoradas: {extra}."
     return ComparisonResult(
         equivalent=True,
-        reason="Result Sets matematicamente equivalentes dentro da tolerância configurada.",
+        reason=reason,
         expected_row_count=len(exp_rows),
         actual_row_count=len(act_rows),
         column_mapping=col_mapping,
