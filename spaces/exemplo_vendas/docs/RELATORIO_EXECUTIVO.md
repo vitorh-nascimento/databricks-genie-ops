@@ -1,7 +1,7 @@
 # Relatório Executivo de Qualidade — Comercial & Receita Corporativa AI-BI
 
 **Space:** `exemplo_vendas` | **Responsável:** Data & Analytics — Squad Comercial | **Gerado em:** 2026-11-23 11:14 UTC
-**Status de Prontidão para Produção:** **APROVADO PARA PRODUÇÃO**
+**Status de Prontidão para Produção:** **EM HOMOLOGAÇÃO — Apenas Validação Offline (rode live/eval-run/agent)**
 
 ---
 

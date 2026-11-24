@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 
 from typer.testing import CliRunner
@@ -11,8 +12,9 @@ from genieops.benchmark import run_benchmark
 from genieops.cli import app
 from genieops.compiler import compile_space
 from genieops.deployer import compute_remote_diff, deploy_space
-from genieops.docs_generator import generate_docs
+from genieops.docs_generator import _production_readiness_status, generate_docs
 from genieops.history import HistoryStore
+from genieops.linter import lint_space
 from genieops.models import SpaceBundle
 from tests.conftest import REPO_ROOT, FakeCompletedProcess, make_json_response
 
@@ -116,7 +118,27 @@ def test_generate_docs_creates_all_four_artifacts(
     html_text = outputs["relatorio_executivo_html"].read_text(encoding="utf-8")
     assert "<!DOCTYPE html>" in html_text
     assert "100.0%" in html_text
-    assert "APROVADO PARA PRODUÇÃO" in html_text
+    # Rodada offline não mede o Genie real: nunca pode aprovar para produção.
+    assert "APROVADO PARA PRODUÇÃO" not in html_text
+    assert "Apenas Validação Offline" in html_text
+
+
+def test_readiness_requires_non_offline_run(exemplo_bundle: SpaceBundle, tmp_path: Path) -> None:
+    history = HistoryStore(db_path=tmp_path / "history.db")
+    offline_run, _ = run_benchmark(exemplo_bundle, env_name="dev", mode="offline", history=history)
+    lint_report = lint_space(exemplo_bundle)
+
+    label, css = _production_readiness_status(lint_report, offline_run)
+    assert "Offline" in label and css == "warning"
+
+    live_ok = replace(offline_run, mode="live", accuracy_pct=92.0)
+    assert _production_readiness_status(lint_report, live_ok) == ("APROVADO PARA PRODUÇÃO", "success")
+
+    live_mid = replace(offline_run, mode="live", accuracy_pct=80.0)
+    assert _production_readiness_status(lint_report, live_mid)[1] == "warning"
+
+    live_low = replace(offline_run, mode="agent", accuracy_pct=60.0)
+    assert _production_readiness_status(lint_report, live_low)[1] == "danger"
 
 
 def test_cli_end_to_end_commands(tmp_path: Path, monkeypatch) -> None:

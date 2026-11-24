@@ -28,11 +28,17 @@ def _production_readiness_status(
     lint_report: LintReport,
     latest_run: BenchmarkRunRecord | None,
 ) -> tuple[str, str]:
-    """Retorna (badge_label, css_class) indicando prontidão para produção."""
+    """Retorna (badge_label, css_class) indicando prontidão para produção.
+
+    Rodadas `offline` só validam a consistência do gabarito (o SQL esperado é avaliado contra
+    ele mesmo) e não medem a assertividade real do Genie; por isso nunca aprovam para produção.
+    """
     if lint_report.error_count > 0:
         return ("BLOQUEADO — Erros de Linter", "danger")
     if latest_run is None:
         return ("EM HOMOLOGAÇÃO — Sem Benchmark", "warning")
+    if latest_run.mode == "offline":
+        return ("EM HOMOLOGAÇÃO — Apenas Validação Offline (rode live/eval-run/agent)", "warning")
     if latest_run.accuracy_pct >= 90.0 and lint_report.health_score >= 85:
         return ("APROVADO PARA PRODUÇÃO", "success")
     if latest_run.accuracy_pct >= 75.0:
